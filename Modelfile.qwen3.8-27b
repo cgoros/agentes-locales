@@ -1,0 +1,7 @@
+FROM ./gguf/Qwen3.8-27B-UD-Q4_K_M.gguf
+
+# 16K de contexto: el 27B Q4 ocupa ~16,5 GB de los 24 GB unificados.
+# Sube a 32768 solo si ves que no hay swap (monitoriza con Activity Monitor).
+PARAMETER num_ctx 16384
+
+PARAMETER temperature 0.6

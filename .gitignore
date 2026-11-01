@@ -1,0 +1,8 @@
+# Entorno local del curso de agentes
+.venv/
+.logs/
+gguf/
+__pycache__/
+*.pyc
+.DS_Store
+.env
