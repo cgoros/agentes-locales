@@ -1,29 +1,82 @@
 # Curso: De Cero a Master en LLMs Locales, Agentes y Orquestación Multiagente
 
 **Hardware:** Mac Apple Silicon M5 · 24 GB RAM unificada · macOS (2026)
-**Stack base ya instalado:** Ollama · LM Studio · LM Studio Bionic
-**Objetivo:** Pasar de usuario de chatbots a diseñador de sistemas de agentes (Prompt → Loop → Graph → Multiagente) ejecutándose 100 % en local.
+**Stack base:** Ollama · LM Studio · LM Studio Bionic · Python 3.12 + LangGraph
+**Objetivo:** Pasar de usuario de chatbots a **diseñador de sistemas de agentes** (Prompt → Loop → Graph → Multiagente en paralelo), ejecutándose 100 % en local.
 
-> **Cómo usar este documento.** Marca las casillas `[ ]` a medida que completes cada paso. Cada módulo tiene un *Entregable* que demuestra que puedes pasar al siguiente. Abre este archivo en VS Code y usa `Cmd+Shift+V` para ver la vista renderizada.
+> **Cómo usar este documento.** El curso está dividido en **3 etapas** (Iniciación, Intermedio y Avanzado). Cada etapa tiene varios módulos, y cada módulo termina con **ejercicios de práctica** y un **entregable**. No pases de etapa hasta completar su entregable. Abre este archivo en VS Code con `Cmd+Shift+V` para ver la vista renderizada y marca las casillas `[ ]` a medida que avanzas.
 
 ---
 
 ## Índice
 
-0. [Diagnóstico y fundamentos del hardware](#módulo-0--diagnóstico-y-fundamentos-del-hardware)
-1. [Instalación y configuración del stack](#módulo-1--instalación-y-configuración-del-stack-completo)
-2. [Prompt Engineering para agentes](#módulo-2--prompt-engineering-para-agentes)
-3. [Loop Engineering](#módulo-3--loop-engineering-el-agente-que-se-corrige-solo)
-4. [Graph Engineering con LangGraph](#módulo-4--graph-engineering-del-loop-al-grafo-de-agentes)
-5. [Multiagente y proyecto final](#módulo-5--multiagente-y-proyecto-final)
-6. [Calendario de 10 semanas](#módulo-6--calendario-de-10-semanas-seguimiento)
-7. [Apéndices](#apéndice-a--solución-de-problemas-frecuentes)
+### 🟢 Etapa 1 — Iniciación (fundamentos y tu primer agente)
+- [1.1 Tu hardware y sus límites](#11-tu-hardware-y-sus-límites)
+- [1.2 Stack local real](#12-stack-local-real-ollama-lm-studio-git)
+- [1.3 Modelos: 9B vs. 27B, GGUF vs. pull](#13-modelos-9b-vs-27b-gguf-vs-pull)
+- [1.4 Tool calling](#14-tool-calling-el-corazón-de-un-agente)
+- [1.5 Entorno Python](#15-entorno-python-para-agentes)
+- [1.6 Prompt Engineering](#16-prompt-engineering-para-agentes)
+- [1.7 VS Code + Cline (+ Aider)](#17-vs-code--cline-opcional-aider)
+- [🎯 Entregable de la Etapa 1](#-entregable-de-la-etapa-1)
+
+### 🟡 Etapa 2 — Intermedio (loops, verificación y grafos)
+- [2.1 Anatomía de un loop](#21-anatomía-de-un-loop)
+- [2.2 Verificación determinista](#22-verificación-determinista-vs-llm)
+- [2.3 Estado y memoria](#23-estado-y-memoria)
+- [2.4 Presupuesto y parada](#24-presupuesto-y-condiciones-de-parada)
+- [2.5 LangGraph](#25-langgraph-el-grafo-de-agentes)
+- [2.6 Grafo condicional](#26-grafo-planificador--redactor--revisor)
+- [2.7 Nodos deterministas](#27-nodos-deterministas-archivos-y-tests)
+- [🎯 Entregable de la Etapa 2](#-entregable-de-la-etapa-2)
+
+### 🔴 Etapa 3 — Avanzado (multiagente en paralelo y proyecto final)
+- [3.1 Tools propias](#31-tools-propias-con-bind_tools)
+- [3.2 Multiagente en paralelo](#32-multiagente-en-paralelo-fan-out--fan-in)
+- [3.3 Orquestador y Sintetizador](#33-orquestador-y-sintetizador)
+- [3.4 Persistencia y reanudación](#34-persistencia-y-reanudación)
+- [3.5 Observabilidad](#35-observabilidad-y-depuración)
+- [3.6 Cline + Aider en el flujo](#36-cline--aider-en-el-flujo-real)
+- [3.7 Proyecto final](#37-proyecto-final-agente-de-mantenimiento-de-repositorio-en-paralelo)
+- [🎯 Entregable de la Etapa 3](#-entregable-de-la-etapa-3)
+
+### Extras
+- [Calendario de 16 semanas](#calendario-de-16-semanas)
+- [Apéndice A — Solución de problemas](#apéndice-a--solución-de-problemas-frecuentes)
+- [Apéndice B — Comandos rápidos](#apéndice-b--referencias-rápidas-de-comandos)
+- [Apéndice C — Estructura real del workspace](#apéndice-c--estructura-real-del-workspace)
+- [Apéndice D — Extensiones de VS Code](#apéndice-d--extensiones-recomendadas-de-vs-code)
+- [Apéndice E — Glosario y checklist de conceptos](#apéndice-e--glosario-y-checklist-de-conceptos)
 
 ---
 
-## Módulo 0 — Diagnóstico y fundamentos del hardware
+## Cómo está organizado el curso
 
-### 0.1. Qué puede y qué no puede hacer tu M5 de 24 GB
+El aprendizaje de agentes sigue una progresión natural. Cada etapa añade una capa sobre la anterior:
+
+| Etapa | Pregunta que responde | Herramienta mental |
+|---|---|---|
+| **🟢 1 — Iniciación** | ¿Cómo hablo con el modelo y le doy herramientas? | **Prompt** (un paso) |
+| **🟡 2 — Intermedio** | ¿Cómo hago que se corrija y colabore por turnos? | **Loop** y **Grafo** |
+| **🔴 3 — Avanzado** | ¿Cómo orquesto varios agentes a la vez? | **Multiagente (fan-out/fan-in)** |
+
+**Ritmo sugerido:** 16 semanas (4 + 5 + 7). Puedes ir más rápido si tienes tiempo, pero **no te saltes la práctica**: el objetivo no es leer, es *construir y ajustar* agentes.
+
+**Regla del curso:** si un ejercicio no funciona, no avances. Depura, ajusta el prompt, mide y repite. Aprender a *ajustar* es el 80 % del oficio.
+
+---
+
+# 🟢 ETAPA 1 — INICIACIÓN: fundamentos y tu primer agente funcional
+
+**Duración sugerida:** 4 semanas · **Objetivo:** entender qué puede tu máquina, montar el stack, dominar *tool calling* y construir varios agentes de **un solo paso** robustos.
+
+> Al terminar esta etapa sabrás **hablarle** al modelo y **darle herramientas**. Es el ladrillo de todo lo demás.
+
+---
+
+## 1.1. Tu hardware y sus límites
+
+Antes de descargar nada, entiende tu máquina. Un Mac con **24 GB de RAM unificada** comparte memoria entre el sistema, el modelo (pesos), el *KV cache* (contexto) y tus apps. Si te pasas, el sistema empieza a hacer **swap** (usar disco como RAM) y todo se ralentiza.
 
 | Sí puedes | No debes intentar |
 |---|---|
@@ -32,141 +85,88 @@
 | Contextos de **decenas de miles de tokens** con margen. | Contextos de 256K con un modelo de 18 GB cargado. |
 | Orquestar varios agentes **en serie** o con modelos pequeños en paralelo. | Ejecutar dos modelos de 27B simultáneamente con fluidez. |
 
-**Regla de oro:** la RAM es compartida entre pesos del modelo, KV cache y el resto del sistema. Un modelo de 18 GB en Q4 deja muy poco margen para contexto largo; para agentes con muchas herramientas, prioriza modelos de **9B–14B** o usa el 27B con prompts compactos.
+**Regla de oro:** la RAM es compartida entre pesos, KV cache y el resto del sistema. Un modelo de 18 GB en Q4 deja muy poco margen para contexto largo; para agentes con muchas herramientas, prioriza modelos de **9B–14B** o usa el 27B con prompts compactos.
 
-**Decisión de este curso (24 GB):** los ejercicios de multiagente se harán con **un solo `qwen3.5:9b`** cargado una vez y reutilizado por todos los roles (agente A, agente B y orquestador/sintetizador), probando **agentes en paralelo** (fan-out / fan-in). El 27B queda para pruebas puntuales de calidad, **nunca** para multiagente concurrente, porque no hay RAM para dos modelos grandes a la vez.
+**Decisión de este curso (24 GB):** todos los ejercicios de agentes y el multiagente en paralelo se hacen con **un solo `qwen3.5:9b`** cargado una vez y reutilizado por todos los roles (agente A, agente B y orquestador/sintetizador), probando **agentes en paralelo** (fan-out / fan-in). El 27B queda para pruebas puntuales de calidad, **nunca** para multiagente concurrente.
 
-- [ ] He leído y entendido las limitaciones de mi hardware.
+**Práctica 1.1**
 
-### 0.2. Diagnóstico del entorno actual
-
-Ejecuta en Terminal:
-
-```bash
-# 1. Verificar Homebrew
-brew --version
-
-# 2. Verificar Python (necesitarás 3.10+)
-python3 --version
-
-# 3. Verificar Ollama y modelos
-ollama --version
-ollama list
-
-# 4. Comprobar que el servidor de Ollama responde
-curl -s http://localhost:11434/api/tags | head -20
-
-# 5. Verificar el CLI de LM Studio
-lms status
-lms ls
-
-# 6. Comprobar si Bionic tiene modelos o está sirviendo
-ls -la ~/.lmstudio/models 2>/dev/null | head
-```
-
-- [ ] Homebrew instalado y funcional.
-- [ ] Python 3.10+ disponible.
-- [ ] Ollama responde en `localhost:11434`.
-- [ ] `lms` reconocido y LM Studio localizado.
-
-**Nota sobre Bionic.** LM Studio Bionic es el **agente de LM Studio para modelos abiertos** (coding, research, documentos). No sustituye a LM Studio: se apoya en su runtime para la inferencia local y añade una capa de agente con edición de código, búsqueda agéntica y manejo de archivos. En este curso lo usarás como *banco de pruebas visual* de tareas agénticas, pero la orquestación programática la harás con Ollama + Python/LangGraph.
+- [ ] Anota cuánta RAM libre tienes antes de cargar un modelo (`vm.swapusage`, Activity Monitor).
+- [ ] Rellena tu propia tabla "qué cabe / qué no" para tus modelos.
+- [ ] Comprueba que `vm.swapusage` es 0 MB (sin swap) en reposo.
 
 ---
 
-## Módulo 1 — Instalación y configuración del stack completo
+## 1.2. Stack local real (Ollama, LM Studio, Git)
 
-### 1.1. Herramientas base
-
-Si en el diagnóstico faltó algo, instálalo ahora.
+**Ollama** es el motor de inferencia local que usará el curso. En este equipo **viene con la app de escritorio `Ollama.app`**, que ya arranca sola y ocupa el puerto **11434**. **No** instales Ollama por Homebrew ni ejecutes `brew services start ollama` mientras la app esté activa: tendrías dos servidores peleando por el mismo puerto.
 
 ```bash
-# Homebrew (si no lo tienes)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Python moderno (si el del sistema es antiguo)
-brew install python@3.12
-
-# Git (normalmente ya viene, pero por si acaso)
-brew install git
+# Comprobar que Ollama responde
+curl -s http://localhost:11434/api/tags | head -20
 ```
 
-- [ ] Homebrew, Python 3.12 y Git listos.
-
-### 1.2. Ollama: configuración como servicio
-
-Aunque ya lo tengas, asegúrate de que arranca automáticamente y de que el servidor está accesible.
+**LM Studio** expone una API compatible con OpenAI en el puerto **1234** y trae el CLI `lms`:
 
 ```bash
-# Instalación/actualización vía Homebrew
-brew install ollama
-# o, si ya está instalado:
-brew upgrade ollama
-
-# Arrancar el servicio en segundo plano
-brew services start ollama
-
-# Verificar
-curl http://localhost:11434/api/tags
-```
-
-- [ ] Ollama corre como servicio y responde en el puerto 11434.
-
-### 1.3. LM Studio y Bionic: servidor local y CLI
-
-LM Studio expone una API compatible con OpenAI en el puerto **1234** por defecto. El CLI `lms` viene incluido en versiones recientes de LM Studio (0.2.22+).
-
-```bash
-# Comprobar el estado del servidor de LM Studio
 lms status
-
-# Arrancar el servidor si no está activo
-lms server start
-
-# Listar modelos descargados en LM Studio
 lms ls
 ```
 
-Si `lms` no está en el PATH, abre LM Studio, ve a **Developer** y verifica que el servidor esté iniciado; el binario `lms` suele estar en `~/.lmstudio/bin/lms`. Puedes añadirlo al PATH:
+**Git bajo Rosetta (importante):** el terminal de este equipo arranca en **x86_64 (Rosetta)** mientras las CommandLineTools son arm64, por lo que `git` puede fallar con `libxcrun ... need 'x86_64'`. Solución sin reinstalar nada:
 
 ```bash
-echo 'export PATH="$HOME/.lmstudio/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+arch -arm64 /usr/bin/git status
+arch -arm64 /usr/bin/git add -A
+arch -arm64 /usr/bin/git commit -m "..."
 ```
 
-- [ ] `lms server start` funciona y el servidor responde en `http://localhost:1234`.
-- [ ] `lms ls` lista al menos un modelo (si no, lo harás en el paso 1.4).
+Instalar un `git` con Homebrew **no** ayuda: Homebrew vive en `/usr/local` (x86_64).
 
-### 1.4. Modelos: qué descargar y en qué orden
+**Práctica 1.2**
 
-Para 24 GB, la guía de referencia de octubre de 2026 es clara: **Qwen3.8 27B** (≈18 GB en Q4) es la mejor opción “todo terreno” para agentes, con un **79.8 % en Terminal-Bench 2.1**; para desarrollo rápido y bucles con mucho contexto, **Qwen3.5 9B** (≈6.6–7.6 GB) es el caballo de batalla.
+- [ ] `curl` de `/api/tags` devuelve JSON.
+- [ ] `lms status` responde.
+- [ ] `uname -m` muestra `x86_64` y `arch -arm64 /usr/bin/git --version` muestra la versión de Git.
 
-Descarga **primero el 9B** (te permite iterar sin esperas) y **luego el 27B** (para cuando necesites calidad).
+---
 
-> **Nota del curso:** todos los ejercicios de agentes y el multiagente en paralelo se hacen con **`qwen3.5:9b`** (un solo modelo en RAM). El `qwen3.8:27b` se reserva para tareas puntuales de calidad que no requieran concurrencia.
+## 1.3. Modelos: 9B vs. 27B, GGUF vs. pull
+
+Para 24 GB, la guía de referencia (octubre de 2026) es clara: **Qwen3.8 27B** (≈18 GB en Q4) es la mejor opción "todo terreno" para calidad, con un **79,8 % en Terminal-Bench 2.1**; **Qwen3.5 9B** (≈6–7,6 GB) es el caballo de batalla para iterar rápido y bucles con mucho contexto.
+
+**Vía oficial** (cuando la red lo permite):
 
 ```bash
-# Modelo ligero para desarrollo de lógica de agentes y loops
 ollama pull qwen3.5:9b
-
-# Modelo “todo terreno” para el nodo orquestador y tareas de calidad
 ollama pull qwen3.8:27b
-
-# Verificar que ambos están y que soportan tool calling (tag "tools")
-ollama list
 ```
 
-**Alternativas útiles** (no las descargues todas; elige según necesidad):
+**Vía local desde GGUF** (la que se usó en este equipo, porque el CDN de blobs de Ollama no era accesible desde esta red). Las recetas están en `Modelfile.qwen3.5-9b` y `Modelfile.qwen3.8-27b`:
+
+```bash
+ollama create qwen3.5:9b  -f Modelfile.qwen3.5-9b
+ollama create qwen3.8:27b -f Modelfile.qwen3.8-27b
+```
+
+**Alternativas útiles** (no las descargues todas):
 
 - **`gpt-oss:20b`** (≈14 GB): buen *function calling* nativo, Apache 2.0.
-- **`qwen3.6:35b`** (MoE, ≈23–24 GB): rápido por tokens activos, pero roza el límite de tu RAM; úsalo solo para experimentos puntuales.
+- **`qwen3.6:35b`** (MoE, ≈23–24 GB): rápido por tokens activos, pero roza el límite de tu RAM; solo para experimentos puntuales.
 
-- [ ] `qwen3.5:9b` descargado y ejecutable (`ollama run qwen3.5:9b`).
-- [ ] `qwen3.8:27b` descargado.
-- [ ] Confirmado que ambos tienen la etiqueta `tools` en `ollama list`.
+**Contexto y RAM:** el 27B se creó con `num_ctx 16384` (no 32K) para no arriesgar swap. El 9B puede usar 16384–32768 con margen.
 
-### 1.5. Verificación crítica: tool calling real
+**Práctica 1.3**
 
-Un agente sin *tool calling* es solo un chatbot. Antes de escribir una línea de Python, comprueba que el modelo emite llamadas a funciones estructuradas.
+- [ ] `ollama list` muestra `qwen3.5:9b` y `qwen3.8:27b` con la etiqueta `tools`.
+- [ ] Usa `./ollama-helper.sh` (opción 2) para ver RAM/swap antes y después de cargar el 27B.
+- [ ] `ollama ps` confirma qué modelo está en memoria.
+
+---
+
+## 1.4. Tool calling: el corazón de un agente
+
+Un agente sin *tool calling* es solo un chatbot. El *tool calling* permite que el modelo **pida ejecutar una función** (buscar, leer un archivo, llamar a una API) y que tu código la ejecute. Antes de escribir Python, comprueba que el modelo lo hace de verdad.
 
 ```bash
 curl -s http://localhost:11434/api/chat -d '{
@@ -188,79 +188,56 @@ curl -s http://localhost:11434/api/chat -d '{
 }' | python3 -m json.tool
 ```
 
-**Qué buscar:** en la respuesta debe aparecer un bloque `tool_calls` con `"name": "get_weather"` y `"arguments": "{\"city\":\"Madrid\"}"`. Los modelos modernos de Ollama (Qwen 3.5, Gemma 4, Llama 3.1+) soportan esto de forma nativa: el modelo emite `tool_calls` estructurados y tu código los ejecuta.
+**Qué buscar:** un bloque `tool_calls` con `"name": "get_weather"` y `"arguments"`. Ollama 0.40 devuelve `arguments` como **objeto**; algunos ejemplos esperan **string JSON**. Ambos son válidos para el cliente Python y LangChain.
+
+**Cómo se ejecuta el tool call (concepto):**
+
+1. El modelo devuelve `tool_calls` (no ejecuta nada).
+2. Tu código lee el nombre y los argumentos, **ejecuta** la función real.
+3. Devuelves el resultado al modelo como mensaje `role: tool`.
+4. El modelo genera la respuesta final.
+
+**Práctica 1.4**
 
 - [ ] El `curl` devuelve un `tool_calls` válido (no texto plano).
-- [ ] Repetido el test con `qwen3.8:27b`.
-
-### 1.6. Entorno Python para agentes
-
-Crea un entorno virtual dedicado para no contaminar el Python del sistema.
-
-```bash
-mkdir -p ~/agentes-locales && cd ~/agentes-locales
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Cliente oficial de Ollama
-pip install ollama
-
-# LangGraph + LangChain para Graph Engineering
-pip install langgraph langchain langchain-ollama
-
-# Utilidades
-pip install python-dotenv rich
-```
-
-- [ ] Entorno `.venv` creado y activado.
-- [ ] `pip list` muestra `langgraph`, `langchain-ollama` y `ollama`.
-
-### 1.7. VS Code: extensión Cline apuntando a Ollama
-
-1. Abre VS Code → Extensiones → busca **Cline** → Instalar.
-2. Abre la configuración de Cline (icono de engranaje).
-3. **API Provider:** `Ollama`.
-4. **Base URL:** `http://localhost:11434`.
-5. **Model:** selecciona `qwen3.5:9b` (para iterar rápido) o `qwen3.8:27b` (para calidad).
-6. **Context Window:** pon al menos **32K tokens** para que el agente no pierda el hilo.
-7. En **Features**, activa **Use Compact Prompt** (reduce el consumo de contexto en modelos locales).
-
-Prueba: pide a Cline *“Crea un archivo hola.py que imprima ‘hola’ y ejecútalo”*. Debe pedirte aprobación antes de ejecutar comandos.
-
-- [ ] Cline instalado y conectado a Ollama.
-- [ ] Prueba de creación/ejecución de archivo completada con aprobación manual.
-
-### 1.8. (Opcional) Aider para refactors con git
-
-Aider es una herramienta de terminal que convierte cada cambio en un commit de git, lo que te da un historial reversible ideal para agentes de código.
-
-```bash
-pip install aider-chat
-
-# Configurar el endpoint de Ollama
-export OLLAMA_API_BASE=http://127.0.0.1:11434
-
-# Ejecutar Aider con el modelo local
-aider --model ollama_chat/qwen3.5:9b
-```
-
-- [ ] Aider instalado y capaz de hacer un commit con un modelo local.
+- [ ] Repite el test con `qwen3.8:27b`.
+- [ ] Define una **segunda** tool (ej. `get_time(city)` o `convert_currency`) y pide algo que requiera las dos.
 
 ---
 
-## Módulo 2 — Prompt Engineering para agentes
+## 1.5. Entorno Python para agentes
 
-### 2.1. Del prompt de chatbot al prompt de especificación
+Crea (o reutiliza) un entorno virtual dedicado. En este workspace ya existe `.venv` en la raíz del proyecto:
 
-Un prompt de agente debe tener cinco partes:
+```bash
+cd agentes-locales
+source .venv/bin/activate
 
-1. **Rol acotado:** no “eres útil”, sino “eres un agente que solo puede usar las herramientas X, Y, Z”.
+# Si tuvieras que crearlo desde cero:
+# python3 -m venv .venv && source .venv/bin/activate
+
+pip install ollama langgraph langchain langchain-ollama python-dotenv rich
+```
+
+**Práctica 1.5**
+
+- [ ] `.venv` activado.
+- [ ] `pip list` muestra `langgraph`, `langchain-ollama` y `ollama`.
+- [ ] `python -c "import ollama, langgraph; print('OK')"` imprime `OK`.
+
+---
+
+## 1.6. Prompt Engineering para agentes
+
+Un prompt de agente debe tener **cinco partes**:
+
+1. **Rol acotado:** no "eres útil", sino "eres un agente que solo puede usar las herramientas X, Y, Z".
 2. **Herramientas y cuándo usarlas:** descripciones claras y nombres cualificados.
 3. **Formato de salida rígido:** si esperas JSON, dilo explícitamente y prohíbe texto adicional.
-4. **Condiciones de parada:** “detente cuando el test pase” o “tras 3 intentos devuelve `NO_ENCONTRADO`”.
+4. **Condiciones de parada:** "detente cuando el test pase" o "tras 3 intentos devuelve `NO_ENCONTRADO`".
 5. **Presupuesto:** número máximo de pasos o tokens.
 
-### 2.2. Ejercicio: agente de resumen con salida JSON estricta
+### Ejercicio base: agente de resumen con salida JSON estricta
 
 Crea `prompt_agente.py`:
 
@@ -290,305 +267,676 @@ if __name__ == "__main__":
     print(resumir(muestra))
 ```
 
-**Criterio de éxito:** ejecútalo **10 veces** con el mismo texto. Debe devolver JSON válido las 10 veces. Si falla, endurece el system prompt (prohíbe más explícitamente, baja la temperatura).
+**Criterio de éxito:** ejecútalo **10 veces** con el mismo texto; debe devolver JSON válido las 10. Si falla, endurece el system prompt y baja la temperatura.
 
-- [ ] Script creado y ejecutado.
-- [ ] 10/10 ejecuciones con JSON parseable.
+**Práctica 1.6 (varios mini-agentes de un paso)** — para cada uno: system prompt con los 5 elementos + criterio 10/10:
 
-**Entregable del módulo:** un agente de un solo paso que transforma texto en JSON estructurado de forma fiable.
-
----
-
-## Módulo 3 — Loop Engineering: el agente que se corrige solo
-
-### 3.1. La anatomía de un Loop
-
-El ciclo mínimo es: **Trigger → Act → Verify → (Retry con nuevo contexto | Exit)**. Lo más difícil no es el bucle, sino la **condición de parada**: un Loop mal diseñado no falla ruidosamente, sigue consumiendo tokens hasta que lo matas.
-
-Un Loop robusto necesita: disparador, ejecución, verificación (preferiblemente determinista, no otro LLM), estado persistido, límite de iteraciones y memoria externa.
-
-### 3.2. Ejercicio: loop que corrige un archivo hasta cumplir una condición
-
-Crea `loop_simple.py`. El objetivo es que un archivo `poema.txt` tenga exactamente 4 líneas y ninguna palabra prohibida (“guerra”, “odio”).
-
-```python
-import ollama, pathlib, json, re
-
-ARCHIVO = pathlib.Path("poema.txt")
-ESTADO = pathlib.Path("loop_estado.json")
-MAX_ITER = 5
-
-def verificar(texto: str) -> tuple[bool, str]:
-    lineas = [l for l in texto.splitlines() if l.strip()]
-    if len(lineas) != 4:
-        return False, f"Tiene {len(lineas)} líneas; deben ser 4."
-    prohibidas = {"guerra", "odio"}
-    encontradas = prohibidas & set(re.findall(r"\w+", texto.lower()))
-    if encontradas:
-        return False, f"Contiene palabras prohibidas: {encontradas}."
-    return True, "OK"
-
-def generar(intento: int, feedback: str) -> str:
-    prompt = f"""Escribe un poema de exactamente 4 líneas sobre la lluvia.
-    {feedback}
-    Devuelve solo el poema, sin títulos ni comentarios."""
-    resp = ollama.chat(
-        model="qwen3.5:9b",
-        messages=[{"role": "user", "content": prompt}],
-        options={"temperature": 0.7},
-    )
-    return resp["message"]["content"].strip()
-
-def main():
-    estado = {"iteracion": 0, "historial": []}
-    feedback = ""
-    for i in range(1, MAX_ITER + 1):
-        texto = generar(i, feedback)
-        ok, motivo = verificar(texto)
-        estado["iteracion"] = i
-        estado["historial"].append({"intento": i, "texto": texto, "ok": ok, "motivo": motivo})
-        if ok:
-            ARCHIVO.write_text(texto)
-            ESTADO.write_text(json.dumps(estado, ensure_ascii=False, indent=2))
-            print(f"✅ Éxito en intento {i}")
-            return
-        feedback = f"El intento anterior falló: {motivo}. Corrige eso."
-    ESTADO.write_text(json.dumps(estado, ensure_ascii=False, indent=2))
-    print("❌ No se alcanzó el criterio en el límite de iteraciones.")
-
-if __name__ == "__main__":
-    main()
-```
-
-**Criterio de éxito:** el script termina solo (éxito o límite), deja `poema.txt` y `loop_estado.json`, y puedes inspeccionar por qué fallaron los intentos anteriores.
-
-- [ ] Script ejecutado y terminado autónomamente.
-- [ ] `loop_estado.json` contiene el historial de intentos.
-
-**Entregable del módulo:** un Loop funcional con verificación determinista y estado persistido.
+- [ ] **Clasificador:** devuelve `{"categoria": "...", "confianza": 0-1}` para tickets de soporte.
+- [ ] **Extractor de entidades:** devuelve `{"personas": [], "lugares": [], "fechas": []}`.
+- [ ] **Corrector con restricciones:** corrige gramática **sin cambiar** el significado; devuelve `{"texto": "...", "cambios": [...]}`.
+- [ ] **Generador YAML:** convierte un texto en YAML válido y bien indentado.
+- [ ] **Compara temperaturas:** ejecuta el clasificador con `temperature` 0.1 vs 0.9 y explica las diferencias.
 
 ---
 
-## Módulo 4 — Graph Engineering: del Loop al grafo de agentes
+## 1.7. VS Code + Cline (opcional: Aider)
 
-### 4.1. Cuándo un Loop ya no basta
+**Cline** es el agente de código dentro de VS Code, apuntando a tu Ollama local:
 
-Un Loop es el grafo más pequeño posible (un nodo con auto-bucle). Solo debes pasar a un grafo multi-nodo cuando la tarea **realmente se divide en subtareas que requieren handoff entre especialistas**. Si un solo agente puede hacerlo, un grafo es sobreingeniería.
+1. Abre VS Code → Extensiones → busca **Cline** → Instalar.
+2. Configuración (engranaje):
+   - **API Provider:** `Ollama`
+   - **Base URL:** `http://localhost:11434`
+   - **Model:** `qwen3.5:9b` (iterar) o `qwen3.8:27b` (calidad)
+   - **Context Window:** ≥ 32768 con el 9B; con el 27B mantén 16384
+3. En **Features**, activa **Use Compact Prompt**.
 
-Elementos de un grafo:
+Prueba: pide a Cline *"Crea un archivo hola.py que imprima 'hola' y ejecútalo"*. Debe pedirte **aprobación** antes de ejecutar comandos.
 
-- **Nodos:** agentes especializados o funciones deterministas.
-- **Aristas:** secuenciales, condicionales, de fan-out o fan-in.
-- **Estado compartido:** un objeto que viaja por el grafo y que cada nodo lee y escribe.
-
-### 4.2. Ejercicio: grafo de 3 nodos con LangGraph
-
-El grafo tendrá: **Planificador → Redactor → Revisor**, con una arista condicional que devuelve al Redactor si el Revisor rechaza.
-
-```python
-# grafo_langgraph.py
-from typing import TypedDict, Literal
-from langgraph.graph import StateGraph, END
-from langchain_ollama import ChatOllama
-
-llm = ChatOllama(model="qwen3.5:9b", temperature=0.3)
-
-class Estado(TypedDict):
-    tema: str
-    plan: str
-    borrador: str
-    revision: str
-    aprobado: bool
-    intentos: int
-
-def planificador(estado: Estado) -> Estado:
-    resp = llm.invoke(f"Haz un plan de 3 puntos para un texto sobre: {estado['tema']}. Sé breve.")
-    return {"plan": resp.content, "intentos": 0, "aprobado": False}
-
-def redactor(estado: Estado) -> Estado:
-    prompt = f"Tema: {estado['tema']}\nPlan: {estado['plan']}\n"
-    if estado.get("revision"):
-        prompt += f"Corrige según esta crítica: {estado['revision']}\n"
-    prompt += "Escribe el texto final (máx. 150 palabras)."
-    resp = llm.invoke(prompt)
-    return {"borrador": resp.content, "intentos": estado["intentos"] + 1}
-
-def revisor(estado: Estado) -> Estado:
-    prompt = f"Revisa este texto. Si es aceptable responde solo 'OK'. Si no, da una crítica breve.\n\n{estado['borrador']}"
-    resp = llm.invoke(prompt)
-    ok = resp.content.strip().upper().startswith("OK")
-    return {"revision": "" if ok else resp.content, "aprobado": ok}
-
-def decidir(estado: Estado) -> Literal["redactor", "fin"]:
-    if estado["aprobado"] or estado["intentos"] >= 3:
-        return "fin"
-    return "redactor"
-
-builder = StateGraph(Estado)
-builder.add_node("planificador", planificador)
-builder.add_node("redactor", redactor)
-builder.add_node("revisor", revisor)
-
-builder.set_entry_point("planificador")
-builder.add_edge("planificador", "redactor")
-builder.add_edge("redactor", "revisor")
-builder.add_conditional_edges("revisor", decidir, {"redactor": "redactor", "fin": END})
-
-grafo = builder.compile()
-
-if __name__ == "__main__":
-    resultado = grafo.invoke({"tema": "la computación local", "plan": "", "borrador": "", "revision": "", "aprobado": False, "intentos": 0})
-    print("Aprobado:", resultado["aprobado"])
-    print("Intentos:", resultado["intentos"])
-    print("\n--- Texto final ---\n", resultado["borrador"])
-```
-
-**Criterio de éxito:** el grafo termina solo, el contador de intentos no supera 3, y si el revisor rechaza, el redactor recibe la crítica como contexto.
-
-- [ ] `langgraph` y `langchain-ollama` importan sin error.
-- [ ] El grafo se ejecuta de principio a fin con un modelo local.
-- [ ] El estado final contiene `aprobado` y `intentos` coherentes.
-
-**Entregable del módulo:** un grafo de 3 nodos con arista condicional funcionando 100 % en local.
-
----
-
-## Módulo 5 — Multiagente y proyecto final
-
-### 5.1. De un grafo de 3 nodos a un sistema multiagente en paralelo
-
-El patrón que vamos a probar es **fan-out / fan-in con un único modelo**:
-
-```
-                      ┌──► [Agente A] ──┐
-[Tarea] ─► [Orquestador]                ├─► [Sintetizador] ─► [Entregable]
-                      └──► [Agente B] ──┘
-```
-
-- **Orquestador**: recibe la tarea, la descompone y lanza **dos agentes en paralelo**.
-- **Agente A** y **Agente B**: trabajan **simultáneamente** sobre subtareas distintas.
-- **Sintetizador**: espera ambas salidas (fan-in) y las **fusiona** en un entregable único.
-
-**Clave para 24 GB de RAM:** los tres roles usan el **mismo modelo `qwen3.5:9b`**, cargado una sola vez. En LangGraph cada nodo hace su propia llamada a `ChatOllama`, pero Ollama reutiliza el mismo peso en memoria: no se duplica la RAM por tener "tres agentes". El 27B no entra en este patrón (ocuparía ~16,5 GB y no habría margen para dos ramas concurrentes).
-
-El grafo en LangGraph sería:
-
-```
-START ─► orquestador ─┬─► agente_a ─┐
-                      └─► agente_b ─┴─► sintetizador ─► END
-```
-
-El **fan-out** se logra añadiendo dos aristas desde `orquestador`, y el **fan-in** con dos aristas hacia `sintetizador`. LangGraph espera a que ambas ramas terminen antes de ejecutar el nodo de síntesis.
-
-### 5.2. Proyecto final: “Agente de mantenimiento de repositorio (en paralelo)”
-
-Construye un sistema con LangGraph que:
-
-1. Se dispare manualmente (o por cambio en un directorio).
-2. **Orquestador**: lee la petición y reparte el trabajo a dos agentes.
-3. **Agente A – Analista**: lee TODOs/issues de archivos `.py` (nodo parcialmente determinista).
-4. **Agente B – Implementador**: propone un parche **en paralelo** al Analista.
-5. **Sintetizador**: fusiona el análisis y el parche en una propuesta única y coherente.
-6. Un **Verificador** determinista (linter/test) valida el resultado; si falla, la arista condicional devuelve al Sintetizador/Implementador con el error como contexto.
-7. Persista el estado en JSON/SQLite para reanudar tras cerrar el portátil.
-8. **Todos los roles LLM usan `qwen3.5:9b`** (un único peso en RAM); el 27B queda para pruebas puntuales de calidad fuera del bucle multiagente.
-
-**Criterio de éxito:** el sistema reparte la tarea entre dos agentes en paralelo, el sintetizador produce una salida única, el verificador la valida y, si falla, itera al menos una vez sin intervención manual, todo en local con 24 GB.
-
-- [ ] Nodo Investigador añadido y funcionando con archivos locales.
-- [ ] Proyecto final ejecutado de principio a fin.
-- [ ] Estado persistido y reanudable.
-
----
-
-## Módulo 6 — Calendario de 10 semanas (seguimiento)
-
-| Semana | Foco | Entregable | Hecho |
-|---|---|---|---|
-| **1** | Stack: Ollama, LM Studio, modelos, tool calling | `curl` con `tool_calls` válido + Cline conectado | `[ ]` |
-| **2** | Prompt Engineering para agentes | Agente de resumen JSON 10/10 | `[ ]` |
-| **3** | Loop Engineering | `loop_simple.py` con estado persistido | `[ ]` |
-| **4** | LangGraph básico | Grafo Planificador→Redactor→Revisor | `[ ]` |
-| **5** | Aristas condicionales y estado | Grafo que itera con crítica del Revisor | `[ ]` |
-| **6** | Nodo determinista (lectura de archivos) | Investigador + Redactor integrados | `[ ]` |
-| **7** | Cline + Aider en flujo real | Cambio multi-archivo revisado en git | `[ ]` |
-| **8** | Persistencia y presupuesto | Loop o grafo que sobrevive a reinicios | `[ ]` |
-| **9** | Proyecto final: diseño | Diagrama del grafo + esqueleto de código | `[ ]` |
-| **10** | Proyecto final: ejecución | Agentes en paralelo + orquestador (todo `qwen3.5:9b`) en local | `[ ]` |
-
----
-
-## Apéndice A — Solución de problemas frecuentes
-
-| Síntoma | Causa probable | Solución |
-|---|---|---|
-| `curl localhost:11434` no responde | Ollama no está corriendo como servicio | `brew services restart ollama` |
-| Cline no lista modelos | El servidor no está activo o la URL es incorrecta | Verifica `http://localhost:11434` y que `ollama list` funcione |
-| El modelo devuelve texto en vez de `tool_calls` | El modelo no soporta tools o el prompt no las declara | Usa `qwen3.5:9b` o `qwen3.8:27b` (tag `tools`) y revisa el esquema |
-| LangGraph se queda colgado | El grafo no tiene arista de salida o el modelo no responde | Añade un límite de iteraciones en la arista condicional |
-| El Mac se ralentiza con el 27B | Contexto demasiado largo o RAM insuficiente | Baja el contexto, usa `qwen3.5:9b` o cierra apps pesadas |
-| Bionic no encuentra modelos | Bionic usa el runtime de LM Studio; el modelo debe estar descargado en LM Studio | Descarga el modelo desde LM Studio o desde Bionic y verifica `lms ls` |
-
----
-
-## Apéndice B — Referencias rápidas de comandos
+**Aider (opcional):** convierte cada cambio en un commit de git (historial reversible ideal para agentes de código).
 
 ```bash
-# Ollama
-ollama list                      # modelos descargados
-ollama ps                        # modelos cargados en memoria
-ollama run qwen3.5:9b            # chat interactivo
-brew services restart ollama     # reiniciar servicio
-
-# LM Studio / Bionic
-lms status                       # estado del servidor
-lms server start                 # arrancar API local (puerto 1234)
-lms ls                           # modelos en disco
-lms ps                           # modelos cargados
-
-# Entorno Python
-source ~/agentes-locales/.venv/bin/activate
-pip install -U langgraph langchain-ollama ollama
-
-# Aider
+pip install aider-chat
 export OLLAMA_API_BASE=http://127.0.0.1:11434
 aider --model ollama_chat/qwen3.5:9b
 ```
 
----
+**Práctica 1.7**
 
-## Apéndice C — Estructura de carpetas recomendada
-
-```
-~/agentes-locales/
-├── .venv/                     # entorno virtual Python
-├── curso-agentes-locales.md   # este documento
-├── prompt_agente.py           # Módulo 2
-├── loop_simple.py             # Módulo 3
-├── grafo_langgraph.py         # Módulo 4
-├── proyecto_final/            # Módulo 5
-│   ├── grafo.py
-│   ├── fuentes/
-│   └── estado.json
-└── notas/
-    └── aprendizajes.md        # tu diario de curso
-```
+- [ ] Cline instalado y conectado a Ollama.
+- [ ] Prueba de creación/ejecución de archivo con aprobación manual.
+- [ ] (Aider) Un commit hecho por Aider con el modelo local.
 
 ---
 
-## Apéndice D — Extensiones recomendadas de VS Code
+## 🎯 Entregable de la Etapa 1
+
+Construye un **agente de un solo paso** que combine varias habilidades en un flujo simple:
+
+- **`agente_etapa1.py`**: recibe un texto (archivo o stdin) y devuelve un único JSON con:
+  - `resumen` (3 líneas),
+  - `categoria` (clasificación del tema),
+  - `entidades` (personas/lugares/fechas),
+  - `palabras_clave`.
+- Reutiliza los mini-agentes de 1.6. Si alguna parte falla, el JSON debe devolver `{"error": ...}` en ese campo (robustez).
+- **Criterio de aceptación:** 10 de 10 ejecuciones producen JSON válido y coherente; ninguna lanza excepción por parseo.
+
+- [ ] `agente_etapa1.py` creado y ejecutado 10 veces con JSON válido.
+- [ ] Documentado en `notas/aprendizajes.md` qué prompt ajustaste y por qué.
+
+> Al completar este entregable dominas **prompt + tools + formato estricto**. Estás listo para la Etapa 2.
+
+---
+
+# 🟡 ETAPA 2 — INTERMEDIO: loops, verificación y grafos
+
+**Duración sugerida:** 5 semanas · **Objetivo:** pasar de "un paso" a **sistemas que se autocorrigen**: bucles con verificación determinista, estado persistente y grafos con aristas condicionales.
+
+---
+
+## 2.1. Anatomía de un loop
+
+Un agente *loop* repite: **Trigger → Act → Verify → Retry** hasta cumplir una condición.
+
+| Fase | Pregunta | Ejemplo |
+|---|---|---|
+| **Trigger** | ¿Qué dispara el trabajo? | Un test que falla, un archivo que cambió. |
+| **Act** | ¿Qué hace el modelo? | Propone un parche de código. |
+| **Verify** | ¿Cómo sé si funcionó? | Ejecutar el test fuera del LLM (**determinista**). |
+| **Retry** | ¿Qué hago si falla? | Reintentar con el error como feedback. |
+
+**Anti-patrón #1:** dejar que el LLM "verifique" su propio trabajo sin comprobación externa. Se autoengaña.
+
+**Práctica 2.1**
+
+- [ ] Dibuja (a mano o en Mermaid) el ciclo de un loop con sus 4 fases.
+- [ ] Identifica en tu vida un proceso que se pueda convertir en loop.
+
+---
+
+## 2.2. Verificación determinista vs. LLM
+
+La regla del curso: **lo que se pueda verificar con código, se verifica con código**.
+
+| Verificación | Herramienta | Coste | Fiabilidad |
+|---|---|---|---|
+| ¿El JSON es válido? | `json.loads` | 0 | 100 % |
+| ¿El test pasa? | `pytest` / `subprocess` | 0 | 100 % |
+| ¿La salida es correcta semánticamente? | **LLM juez** | tokens | alta pero no infalible |
+
+**Verificación determinista:**
+
+```python
+import json
+
+def verificar_json(texto: str) -> bool:
+    try:
+        data = json.loads(texto)
+        return all(k in data for k in ("resumen", "palabras_clave"))
+    except json.JSONDecodeError:
+        return False
+```
+
+**LLM juez (solo cuando no hay código posible):**
+
+```python
+JUEZ = """Compara la RESPUESTA con el CRITERIO y devuelve solo un JSON:
+{"aprobado": true|false, "motivo": "<breve>"}"""
+
+def juzgar(respuesta: str, criterio: str) -> dict:
+    resp = ollama.chat(
+        model="qwen3.5:9b",
+        messages=[
+            {"role": "system", "content": JUEZ},
+            {"role": "user", "content": f"CRITERIO: {criterio}\nRESPUESTA: {respuesta}"},
+        ],
+        format="json",
+        options={"temperature": 0},
+    )
+    return json.loads(resp["message"]["content"])
+```
+
+**Práctica 2.2**
+
+- [ ] Escribe un verificador determinista para tu entregable E1 (caso sin parseo).
+- [ ] Añade un juez LLM para lo que no se puede verificar con código.
+- [ ] Combina ambos en `verificar(resultado) -> (bool, motivo)`.
+
+---
+
+## 2.3. Estado y memoria
+
+Un loop sin estado repite errores. Guarda **cada intento** en un JSON o SQLite.
+
+```json
+{
+  "objetivo": "corregir funcion.py hasta que pase los tests",
+  "intentos": [
+    {"n": 1, "parche": "...", "resultado": "FAIL: test_suma", "tiempo_s": 12},
+    {"n": 2, "parche": "...", "resultado": "PASS", "tiempo_s": 9}
+  ],
+  "estado": "COMPLETADO"
+}
+```
+
+**Cuándo usar qué:**
+
+- **JSON:** pocos datos, inspección manual, prototipos.
+- **SQLite:** muchos registros, consultas por estado, varios procesos.
+
+**Práctica 2.3**
+
+- [ ] Guarda el historial de intentos en `loop_estado.json`.
+- [ ] Haz que el loop lea el estado previo al arrancar (reanudación básica).
+- [ ] (Plus) Migra el estado a SQLite y consulta `SELECT * FROM intentos WHERE estado='FAIL'`.
+
+---
+
+## 2.4. Presupuesto y condiciones de parada
+
+Todo loop necesita un **freno**: máximo de intentos, tiempo o tokens, y una salida limpia cuando se agota.
+
+```python
+MAX_INTENTOS = 3
+
+for n in range(1, MAX_INTENTOS + 1):
+    salida = actuar(estado)
+    ok, motivo = verificar(salida)
+    estado["intentos"].append({"n": n, "resultado": motivo})
+    if ok:
+        estado["estado"] = "COMPLETADO"
+        break
+else:
+    estado["estado"] = "NO_LOGRADO"  # salida explícita, no excepción
+guardar(estado, "loop_estado.json")
+```
+
+**Anti-patrón #2:** loop sin `break` ni presupuesto → ejecución infinita y RAM/CPU al 100 %.
+
+**Práctica 2.4**
+
+- [ ] Añade `MAX_INTENTOS`, `MAX_SEGUNDOS` y un estado `NO_LOGRADO` a tu loop.
+- [ ] Fuerza un caso donde se agote el presupuesto y verifica la salida limpia.
+
+---
+
+## 2.5. LangGraph: el grafo de agentes
+
+LangGraph modela un agente como un **grafo de estados**: nodos (funciones) y aristas (transiciones). Un loop es un grafo con una arista que vuelve atrás.
+
+```bash
+pip install langgraph langchain-ollama
+```
+
+```python
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+from langchain_ollama import ChatOllama
+
+class Estado(TypedDict):
+    tarea: str
+    plan: str
+    borrador: str
+    revision: str
+    aprobado: bool
+
+llm = ChatOllama(model="qwen3.5:9b", temperature=0.1)
+
+def planificador(estado: Estado) -> dict:
+    plan = llm.invoke(f"Haz un plan de 3 pasos para: {estado['tarea']}").content
+    return {"plan": plan}
+
+def redactor(estado: Estado) -> dict:
+    texto = llm.invoke(f"Escribe el texto siguiendo el plan:\n{estado['plan']}").content
+    return {"borrador": texto}
+
+def revisor(estado: Estado) -> dict:
+    ok = len(estado["borrador"]) > 100  # verificación determinista
+    return {"aprobado": ok, "revision": "OK" if ok else "DEMASIADO_CORTO"}
+
+grafo = StateGraph(Estado)
+grafo.add_node("planificador", planificador)
+grafo.add_node("redactor", redactor)
+grafo.add_node("revisor", revisor)
+
+grafo.add_edge(START, "planificador")
+grafo.add_edge("planificador", "redactor")
+grafo.add_edge("redactor", "revisor")
+grafo.add_edge("revisor", END)
+
+app = grafo.compile()
+print(app.invoke({"tarea": "Explica qué es un agente local"}))
+```
+
+**Práctica 2.5**
+
+- [ ] Ejecuta el grafo anterior y guarda la salida.
+- [ ] Añade al estado un campo `intentos` que se incremente en `redactor`.
+- [ ] Cambia el `llm` a `qwen3.8:27b` y compara calidad/velocidad.
+
+---
+
+## 2.6. Grafo Planificador → Redactor → Revisor
+
+El paso clave es la **arista condicional**: si el revisor no aprueba, volvemos al redactor.
+
+```python
+def decidir(estado: Estado) -> str:
+    return "fin" if estado["aprobado"] else "reintentar"
+
+grafo.add_conditional_edges("revisor", decidir, {
+    "fin": END,
+    "reintentar": "redactor",
+})
+```
+
+Con esto el grafo **se autocorrige** sin código de loop manual. Añade un contador en el estado para no reintentar infinitamente:
+
+```python
+def redactor(estado: Estado) -> dict:
+    n = estado.get("intentos", 0) + 1
+    texto = llm.invoke(f"Mejora este borrador (intento {n}):\n{estado.get('borrador','')}").content
+    return {"borrador": texto, "intentos": n}
+
+def decidir(estado: Estado) -> str:
+    if estado["aprobado"] or estado.get("intentos", 0) >= 3:
+        return "fin"
+    return "reintentar"
+```
+
+**Práctica 2.6**
+
+- [ ] Convierte el grafo lineal de 2.5 en uno con arista condicional.
+- [ ] Verifica que el flujo termina en ≤ 3 reintentos aunque el revisor siempre rechace.
+- [ ] (Plus) Haz que el revisor devuelva una *crítica* que el redactor use como feedback.
+
+---
+
+## 2.7. Nodos deterministas (archivos y tests)
+
+No todo debe hacerlo el LLM. Los mejores grafos tienen **nodos de código puro**:
+
+```python
+from pathlib import Path
+
+def escribir_archivo(estado: Estado) -> dict:
+    p = Path("salida.md")
+    p.write_text(estado["borrador"], encoding="utf-8")
+    return {"ruta": str(p)}
+
+def ejecutar_tests(estado: Estado) -> dict:
+    import subprocess
+    r = subprocess.run(["python", "-m", "pytest", "-q"], capture_output=True, text=True)
+    return {"aprobado": r.returncode == 0, "revision": r.stdout[-500:]}
+```
+
+**Práctica 2.7**
+
+- [ ] Añade un nodo que escriba el resultado a un archivo.
+- [ ] Añade un nodo que ejecute un test y marque `aprobado` según el exit code.
+- [ ] Dibuja el grafo final diferenciando nodos LLM y deterministas.
+
+---
+
+## 🎯 Entregable de la Etapa 2
+
+Un **grafo con loop interno autocorrectivo**:
+
+- **`grafo_etapa2.py`**: `StateGraph` con al menos:
+  - un nodo **determinista** (lee archivo / valida / ejecuta test),
+  - dos nodos **LLM** (ej. planificador y redactor/crítico),
+  - una **arista condicional** que reintente hasta aprobar o agotar presupuesto.
+- Estado persistido en JSON o SQLite tras cada ejecución.
+- **Criterio de aceptación:** ejecutar 5 tareas distintas; todas terminan en `COMPLETADO` o `NO_LOGRADO` con motivo, sin excepciones ni loops infinitos.
+
+- [ ] `grafo_etapa2.py` funciona con 5 tareas distintas.
+- [ ] Estado persistido y reanudable.
+- [ ] Diagrama del grafo en `notas/` (Mermaid o imagen).
+
+> Al completar este entregable dominas **loops + grafos + verificación**. Estás listo para el multiagente.
+
+---
+
+# 🔴 ETAPA 3 — AVANZADO: multiagente en paralelo y proyecto final
+
+**Duración sugerida:** 7 semanas · **Objetivo:** construir un **sistema multiagente** con tools propias, ejecución **en paralelo (fan-out / fan-in)**, orquestador/sintetizador y persistencia, todo sobre un único `qwen3.5:9b`.
+
+> En 24 GB no puedes cargar un modelo grande por agente. La solución profesional: **un solo peso en memoria, muchos roles lógicos**, coordinados por LangGraph.
+
+---
+
+## 3.1. Tools propias con bind_tools
+
+Hasta ahora las tools eran esquemas JSON. Ahora las defines como funciones Python y las enlazas al modelo:
+
+```python
+from langchain_core.tools import tool
+from langchain_ollama import ChatOllama
+
+@tool
+def leer_archivo(ruta: str) -> str:
+    """Devuelve el contenido de un archivo de texto."""
+    with open(ruta, encoding="utf-8") as f:
+        return f.read()[:4000]
+
+@tool
+def listar_python(directorio: str) -> list[str]:
+    """Lista los archivos .py de un directorio."""
+    from pathlib import Path
+    return [p.name for p in Path(directorio).glob("*.py")]
+
+llm = ChatOllama(model="qwen3.5:9b", temperature=0.1)
+llm_con_tools = llm.bind_tools([leer_archivo, listar_python])
+
+resp = llm_con_tools.invoke("¿Cuántos archivos .py hay en . y qué hace el primero?")
+print(resp.tool_calls)
+```
+
+El flujo es el mismo: el modelo emite `tool_calls`, tú ejecutas y devuelves `ToolMessage`.
+
+**Práctica 3.1**
+
+- [ ] Crea una tool de lectura y otra de listado.
+- [ ] Ejecuta un mini-loop: invoca → ejecuta `tool_calls` → devuelve `ToolMessage` → responde.
+- [ ] Añade una tool determinista (`ejecutar_tests`) y úsala solo cuando haga falta.
+
+---
+
+## 3.2. Multiagente en paralelo (fan-out / fan-in)
+
+**Fan-out:** lanzas N tareas a la vez. **Fan-in:** reúnes y sintetizas los resultados.
+
+```
+            ┌─ Agente A (rol: seguridad) ──┐
+Tarea ──► ──┤                              ├──► Orquestador/Sintetizador ──► Salida
+            └─ Agente B (rol: rendimiento)─┘
+```
+
+En LangGraph se usa un nodo que escribe a una **clave de lista** en el estado, y un nodo de reducción:
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+def agente_rol(rol: str, contexto: str) -> str:
+    prompt = f"Actúa como experto en {rol}. Analiza y responde breve:\n{contexto}"
+    return llm.invoke(prompt).content
+
+def fan_out(estado: dict) -> dict:
+    roles = ["seguridad", "rendimiento"]
+    with ThreadPoolExecutor(max_workers=len(roles)) as ex:
+        resultados = list(ex.map(lambda r: agente_rol(r, estado["contexto"]), roles))
+    return {"parciales": resultados}
+```
+
+> **Nota 24 GB:** con `qwen3.5:9b` (≈6–7,6 GB) caben **2–3 agentes en paralelo** con margen; con el 27B, **solo 1** a la vez. Ollama sirve peticiones concurrentes al mismo modelo sin recargarlo.
+
+**Práctica 3.2**
+
+- [ ] Implementa fan-out con 2 roles sobre un mismo texto.
+- [ ] Verifica con `ollama ps` que sigue cargado un único modelo.
+- [ ] Mide el tiempo del paralelo vs. en serie.
+
+---
+
+## 3.3. Orquestador y Sintetizador
+
+El orquestador **decide qué roles lanzar**; el sintetizador **fusiona** las salidas en una respuesta única.
+
+```python
+import json
+
+def orquestador(contexto: str) -> list[str]:
+    pregunta = ("Lista los roles expertos necesarios para analizar este texto, "
+                f'en JSON: {{"roles": [...]}}\n\n{contexto[:2000]}')
+    resp = llm.invoke(pregunta).content
+    try:
+        return json.loads(resp).get("roles", ["general"])
+    except Exception:
+        return ["general"]
+
+def sintetizador(parciales: list[str]) -> str:
+    unido = "\n\n---\n\n".join(parciales)
+    prompt = ("Fusiona estos análisis en uno solo, sin repetir y sin inventar:\n\n" + unido)
+    return llm.invoke(prompt).content
+```
+
+**Práctica 3.3**
+
+- [ ] Haz que el orquestador decida los roles dinámicamente (no fijos).
+- [ ] Añade los campos `parciales` y `sintesis` al estado del grafo.
+- [ ] Mide cuántas llamadas al modelo hace el flujo completo.
+
+---
+
+## 3.4. Persistencia y reanudación
+
+LangGraph trae **checkpointing**: guarda el estado tras cada nodo y permite reanudar.
+
+```python
+from langgraph.checkpoint.sqlite import SqliteSaver
+
+memoria = SqliteSaver.from_conn_string("checkpoints.sqlite")
+app = grafo.compile(checkpointer=memoria)
+
+config = {"configurable": {"thread_id": "tarea-001"}}
+app.invoke({"contexto": "..."}, config=config)
+# Si el proceso muere, reanudas con el mismo thread_id:
+app.invoke({}, config=config)
+```
+
+**Práctica 3.4**
+
+- [ ] Compila un grafo con `SqliteSaver` y ejecútalo.
+- [ ] Mata el proceso a mitad y reanuda con el mismo `thread_id`.
+- [ ] Inspecciona la tabla de checkpoints y explica su estructura.
+
+---
+
+## 3.5. Observabilidad y depuración
+
+Cuando hay 3 agentes en paralelo, sin trazas no sabes quién falló.
+
+- **Logs estructurados:** cada llamada con `nodo`, `rol`, `tokens`, `ms`, `ok`.
+- **LangSmith / LangFuse:** trazas visuales de LangGraph (opcional; cuestan red).
+- **Local mínimo:** un `trazas.jsonl` con una línea por evento.
+
+```python
+import json, time
+
+def traza(nodo: str, **datos):
+    with open("trazas.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"t": time.time(), "nodo": nodo, **datos}, ensure_ascii=False) + "\n")
+```
+
+**Práctica 3.5**
+
+- [ ] Añade `traza()` a los nodos de tu grafo.
+- [ ] Genera un informe con `jq` o Python: nodos más lentos, nº de fallos.
+- [ ] (Plus) Prueba LangSmith una vez y decide si compensa.
+
+---
+
+## 3.6. Cline + Aider en el flujo real
+
+Integra el agente de código como **constructor** dentro del proyecto:
+
+1. **Cline** para tareas interactivas multi-archivo (escribe, ejecuta, aprueba).
+2. **Aider** para cambios rastreables en git (`--auto-commits`).
+3. **Tu grafo** para tareas automáticas (análisis, revisión).
+
+**Práctica 3.6**
+
+- [ ] Haz un cambio multi-archivo con Cline y revísalo como PR.
+- [ ] Haz un cambio con Aider y compara la historia de commits.
+- [ ] Documenta cuándo usar Cline vs Aider vs tu grafo.
+
+---
+
+## 3.7. Proyecto final: agente de mantenimiento de repositorio en paralelo
+
+**Objetivo:** un sistema que, dado un repositorio, ejecuta en paralelo:
+
+| Hito | Semanas | Qué construyes |
+|---|---|---|
+| **H1 — Esqueleto** | 15 | Grafo con nodos `orquestador`, `fan_out`, `sintetizador`, `persistencia` |
+| **H2 — Agentes A/B** | 15 | `Agente A (calidad de código)` y `Agente B (seguridad)` con tools propias |
+| **H3 — Paralelo + fusión** | 16 | `ThreadPoolExecutor` 2–3 workers (todo 9b) + síntesis |
+| **H4 — Persistencia + informe** | 16 | Checkpoints SQLite, reanudación y `informe.md` final |
+
+**Arquitectura objetivo:**
+
+```python
+import operator
+from typing import Annotated, TypedDict
+
+class EstadoFinal(TypedDict):
+    repo: str
+    roles: list[str]
+    parciales: Annotated[list[str], operator.add]  # fan-in
+    sintesis: str
+    informes: list[str]
+
+# START → orquestador → fan_out → fan_in(sintetizador) → END
+# checkpointer=SqliteSaver, thread_id por repo
+```
+
+**Criterios de aceptación:**
+
+- [ ] Ejecutarse con **un único modelo cargado** (`ollama ps` muestra solo `qwen3.5:9b`).
+- [ ] 2–3 agentes en paralelo por tarea; tiempo total < suma de tiempos en serie.
+- [ ] Reanudable tras matar el proceso.
+- [ ] Informe final `informe.md` con hallazgos de cada rol y síntesis.
+- [ ] Ejecutable 10 veces seguidas sin fugas de RAM (vigila swap).
+
+## 🎯 Entregable de la Etapa 3
+
+El sistema `mtto_repo.py` del proyecto final cumpliendo todos los criterios anteriores, documentado en el `README.md` del proyecto:
+
+- [ ] Código fuente funcional.
+- [ ] Diagrama del grafo (Mermaid).
+- [ ] Trazas `trazas.jsonl` + ejemplo de informe.
+- [ ] Notas de aprendizajes (qué ajustaste, métricas antes/después).
+
+> Has completado el curso: **construyes sistemas de agentes locales** con planificación, paralelismo y persistencia — sin salir de tu Mac.
+
+---
+
+# Calendario de 16 semanas
+
+| Semana | Etapa | Foco | Entregable |
+|---|---|---|---|
+| 1 | 🟢 1 | Hardware + stack + modelos | Checklist + `ollama list` correcto |
+| 2 | 🟢 1 | Tool calling | `curl` con `tool_calls` válido (✅ hecho) |
+| 3 | 🟢 1 | Prompt engineering | `prompt_agente.py` (JSON 10/10) |
+| 4 | 🟢 1 | Prompt avanzado + Cline | **E1**: `agente_etapa1.py` |
+| 5 | 🟡 2 | Anatomía del loop + verificación | Loop con verificación determinista |
+| 6 | 🟡 2 | Estado + presupuesto | `loop_estado.json` reanudable |
+| 7 | 🟡 2 | LangGraph básico | `StateGraph` de 3 nodos |
+| 8 | 🟡 2 | Grafo condicional | Autocorrección con ≤ 3 reintentos |
+| 9 | 🟡 2 | Nodos deterministas | **E2**: `grafo_etapa2.py` |
+| 10 | 🔴 3 | Tools propias | `bind_tools` con 2 tools reales |
+| 11 | 🔴 3 | Fan-out / fan-in | 2 agentes en paralelo (9b) |
+| 12 | 🔴 3 | Orquestador/Sintetizador | Salida fusionada |
+| 13 | 🔴 3 | Persistencia | `SqliteSaver` + reanudación |
+| 14 | 🔴 3 | Observabilidad + Cline/Aider | `trazas.jsonl` + PR multi-archivo |
+| 15 | 🔴 3 | Proyecto final H1-H2 | Esqueleto + agentes A/B |
+| 16 | 🔴 3 | Proyecto final H3-H4 | **E3**: `mtto_repo.py` completo |
+
+**Ritmo flexible:** si vas sobrado, comprime las semanas de integración (4, 9, 14). Si vas justo, alarga la Etapa 3 a 9 semanas.
+
+---
+
+# Apéndice A — Solución de problemas frecuentes
+
+| Síntoma | Causa probable | Solución |
+|---|---|---|
+| `curl localhost:11434` → connection refused | Ollama.app no está arrancada | Abre `Ollama.app`; **no** uses `brew services` |
+| `git: libxcrun ... need 'x86_64'` | Terminal en Rosetta, CLT arm64 | `arch -arm64 /usr/bin/git ...` |
+| `ollama pull` se cuelga | CDN de blobs inaccesible | Vía GGUF + `Modelfile.*` + `ollama create` |
+| El modelo ignora las tools | `tools` mal formado | Revisa `"type": "function"` y el JSON Schema |
+| El modelo devuelve texto en vez de JSON | `format` no forzado | `format="json"` + `temperature` baja |
+| El modelo "alucina" verificación | Verificación hecha por el LLM | Usa `pytest`/`json.loads` (determinista) |
+| Swap disparado | Modelo grande + contexto largo | Baja `num_ctx` o usa el 9B |
+| `invalid tool call arguments for "editor"` | Edición > ~6000 chars en una sola llamada | Divide en fragmentos pequeños |
+
+---
+
+# Apéndice B — Referencias rápidas de comandos
+
+```bash
+# Ollama
+curl -s http://localhost:11434/api/tags | python3 -m json.tool
+ollama list
+ollama ps
+ollama run qwen3.5:9b
+ollama create qwen3.5:9b -f Modelfile.qwen3.5-9b
+
+# LM Studio
+lms status
+lms ls
+
+# Git (Rosetta)
+arch -arm64 /usr/bin/git status
+arch -arm64 /usr/bin/git diff --stat
+
+# Python
+source .venv/bin/activate
+python -c "import ollama, langgraph; print('OK')"
+```
+
+---
+
+# Apéndice C — Estructura real del workspace
+
+```
+agentes-locales/
+├── README.md                 # índice operativo
+├── curso-agentes-locales.md  # este curso (3 etapas)
+├── NOTAS-MODULO1.md          # desviaciones reales respecto al curso
+├── ollama-helper.sh          # helper: estado, RAM/swap, modelos
+├── Modelfile.qwen3.5-9b      # receta desde GGUF (9B)
+├── Modelfile.qwen3.8-27b     # receta desde GGUF (27B)
+├── .venv/                    # entorno Python
+└── .gitignore
+```
+
+---
+
+# Apéndice D — Extensiones recomendadas de VS Code
 
 | Extensión | Para qué |
 |---|---|
-| **Cline** | Agente de código conectado a Ollama |
-| **Markdown All in One** | Atajos, TOC automático y preview mejorada |
-| **Markdown Checkboxes** | Casillas `[ ]` interactivas en el editor |
-| **Python** (Microsoft) | IntelliSense, debugger, linting |
-| **Even Better TOML** | Para configuración de proyectos |
-| **GitLens** | Historial de commits (útil con Aider) |
+| **Cline** | Agente de código dentro del editor |
+| **Markdown All in One** | Índices, preview, atajos |
+| **Python** | Intérprete, linting, debugging |
+| **SQLite Viewer** | Inspeccionar `checkpoints.sqlite` |
+| **Even Better TOML** | `Modelfile` y configuraciones |
+| **GitLens** | Historial de cambios del agente |
 
 ---
 
-**Fin del documento.**
+# Apéndice E — Glosario y checklist de conceptos
 
-Guarda este archivo como `curso-agentes-locales.md`, ábrelo en VS Code con `Cmd+Shift+V` para ver la versión renderizada, y marca las casillas a medida que completas cada paso. Cuando termines el Módulo 1, vuelve y comparte la salida de `ollama list` y el resultado del `curl` de tool calling para validar que la base está sólida antes de entrar en Loop Engineering.
+| Concepto | Definición breve |
+|---|---|
+| **Tool calling** | El modelo pide ejecutar una función; tu código la ejecuta |
+| **Loop** | Ciclo Trigger→Act→Verify→Retry hasta cumplir condición |
+| **Grafo** | Estados + nodos + aristas (LangGraph) |
+| **Arista condicional** | Transición decidida por una función (p. ej. aprobado sí/no) |
+| **Fan-out / fan-in** | Lanzar N tareas en paralelo y reunir resultados |
+| **Checkpoint** | Estado persistido tras cada nodo (reanudable) |
+| **Verificación determinista** | Comprobar con código (tests, JSON), no con el LLM |
+| **MoE** | Mezcla de expertos: pocos parámetros activos por token |
+
+**Checklist final:**
+
+- [ ] Sé explicar la diferencia entre *prompt*, *loop* y *grafo*.
+- [ ] Sé cuándo usar verificación determinista vs. LLM juez.
+- [ ] Sé crear un grafo LangGraph con nodos LLM y deterministas.
+- [ ] Sé montar fan-out con 2–3 agentes sobre un único modelo.
+- [ ] Sé persistir y reanudar estado con `SqliteSaver`.
+- [ ] Sé medir rendimiento (tiempos, swap, tokens).
+
+---
+
+*Curso de agentes locales — M5 24 GB. Todo lo que aparece aquí se ejecuta en tu Mac.*

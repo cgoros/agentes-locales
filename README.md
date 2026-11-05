@@ -31,23 +31,22 @@ Multiagente"**, ejecutándose 100 % en local con Ollama.
 
 ## El núcleo: el curso
 
-El archivo `curso-agentes-locales.md` es la referencia maestra. Sus módulos:
+El archivo `curso-agentes-locales.md` es la referencia maestra. Sus **3 etapas**:
 
-| Módulo | Contenido | Entregable |
+| Etapa | Contenido | Entregable |
 |---|---|---|
-| **0** | Diagnóstico y fundamentos del hardware (qué puede un M5 de 24 GB) | Checklist de limitaciones entendidas |
-| **1** | Instalación y configuración del stack (Ollama, LM Studio, modelos, tool calling) | `curl` con `tool_calls` válido + Cline conectado |
-| **2** | Prompt Engineering para agentes | Agente de resumen JSON estricto (`prompt_agente.py`) |
-| **3** | Loop Engineering (Trigger→Act→Verify→Retry) | `loop_simple.py` con estado persistido |
-| **4** | Graph Engineering con LangGraph | Grafo Planificador→Redactor→Revisor (`grafo_langgraph.py`) |
-| **5** | Multiagente y proyecto final | Agentes en paralelo + orquestador/sintetizador con `qwen3.5:9b` |
-| **6** | Calendario de 10 semanas | Seguimiento por semana |
+| **🟢 1 — Iniciación** | Hardware, stack, modelos, tool calling, prompt engineering, Cline | Agente de un paso (JSON estricto 10/10) |
+| **🟡 2 — Intermedio** | Loops (Trigger→Act→Verify→Retry), verificación, LangGraph, grafos condicionales | Grafo con loop interno que se autocorrige |
+| **🔴 3 — Avanzado** | Tools propias, multiagente en paralelo (fan-out/fan-in), orquestador/sintetizador, persistencia | Proyecto final: agente de mantenimiento en paralelo (todo `qwen3.5:9b`) |
 
-Los apéndices A–D cubren: solución de problemas, referencia rápida de comandos,
-estructura de carpetas y extensiones recomendadas de VS Code.
+El calendario detallado (**16 semanas**) está al final del curso, repartido por etapas.
 
-**Progreso real:** Módulo 1 completado. Los scripts de los Módulos 2–4 aún no se
-han creado (ver `NOTAS-MODULO1.md` para las desviaciones respecto al curso).
+Los apéndices A–E cubren: solución de problemas, comandos rápidos, estructura real
+del workspace, extensiones de VS Code y un glosario/checklist de conceptos.
+
+**Progreso real:** Etapa 1, módulos **1.1–1.4** completados (hardware, stack, modelos
+y tool calling verificado). Los scripts de 1.6 en adelante y las Etapas 2–3 aún no
+se han creado (ver `NOTAS-MODULO1.md` para las desviaciones respecto al curso).
 
 ---
 
@@ -81,8 +80,8 @@ Verificado el 2026-10-31 (detalle en [`NOTAS-MODULO1.md`](./NOTAS-MODULO1.md)):
 ```
 agentes-locales/
 ├── README.md                    # este documento (índice y funciones)
-├── curso-agentes-locales.md     # NÚCLEO: el curso completo (módulos 0–6)
-├── NOTAS-MODULO1.md             # estado real del Módulo 1 + desviaciones
+├── curso-agentes-locales.md     # NÚCLEO: el curso completo (3 etapas)
+├── NOTAS-MODULO1.md             # estado real de la Etapa 1 + desviaciones
 ├── ollama-helper.sh             # gestor unificado de modelos (menú interactivo)
 ├── Modelfile.qwen3.5-9b         # receta de importación GGUF del 9B
 ├── Modelfile.qwen3.8-27b        # receta de importación GGUF del 27B
@@ -258,18 +257,24 @@ de `git` falla bajo Rosetta en este equipo. Usa `arch -arm64 /usr/bin/git`.
 
 ## Hoja de ruta del curso
 
-| Semana | Foco | Entregable |
-|---|---|---|
-| 1 | Stack + tool calling | `curl` con `tool_calls` válido (✅ hecho) |
-| 2 | Prompt Engineering | `prompt_agente.py` (JSON 10/10) |
-| 3 | Loop Engineering | `loop_simple.py` con estado persistido |
-| 4 | LangGraph básico | `grafo_langgraph.py` (Planificador→Redactor→Revisor) |
-| 5 | Aristas condicionales | Grafo que itera con crítica del Revisor |
-| 6 | Nodo determinista | Investigador + Redactor integrados |
-| 7 | Cline + Aider en flujo real | Cambio multi-archivo en git |
-| 8 | Persistencia | Loop/grafo que sobrevive a reinicios |
-| 9 | Proyecto final: diseño | Diagrama del grafo + esqueleto |
-| 10 | Proyecto final: ejecución | Agentes en paralelo + orquestador (todo 9b) en local |
+| Semana | Etapa | Foco | Entregable |
+|---|---|---|---|
+| 1 | 🟢 1 | Stack + tool calling | `curl` con `tool_calls` válido (✅ hecho) |
+| 2 | 🟢 1 | Prompt Engineering | `prompt_agente.py` (JSON 10/10) |
+| 3 | 🟢 1 | Prompt avanzado (few-shot, clasificador, extractor) | 3 agentes de un paso funcionando |
+| 4 | 🟢 1 | Cline + primer agente integrado | **Entregable E1** |
+| 5 | 🟡 2 | Loops básicos | Loop con verificación y estado |
+| 6 | 🟡 2 | Verificación determinista + estado | `loop_estado.json` con historial |
+| 7 | 🟡 2 | LangGraph básico | `StateGraph` de 3 nodos |
+| 8 | 🟡 2 | Grafo condicional | Grafo Planificador→Redactor→Revisor |
+| 9 | 🟡 2 | Nodos deterministas + integración | **Entregable E2** |
+| 10 | 🔴 3 | Tools propias (`bind_tools`) | Agente con 2 tools reales |
+| 11 | 🔴 3 | Multiagente fan-out/fan-in | 2 agentes en paralelo (todo 9b) |
+| 12 | 🔴 3 | Orquestador/Sintetizador | Salida fusionada única |
+| 13 | 🔴 3 | Persistencia y reanudación | Grafo reanudable tras reinicio |
+| 14 | 🔴 3 | Observabilidad + Cline/Aider | Trazas y logs claros |
+| 15 | 🔴 3 | Proyecto final: diseño + hitos 1-2 | Esqueleto + agentes A/B |
+| 16 | 🔴 3 | Proyecto final: ejecución + hitos 3-4 | **Entregable E3** en local |
 
 ---
 
