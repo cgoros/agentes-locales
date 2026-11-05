@@ -34,6 +34,8 @@
 
 **Regla de oro:** la RAM es compartida entre pesos del modelo, KV cache y el resto del sistema. Un modelo de 18 GB en Q4 deja muy poco margen para contexto largo; para agentes con muchas herramientas, prioriza modelos de **9B–14B** o usa el 27B con prompts compactos.
 
+**Decisión de este curso (24 GB):** los ejercicios de multiagente se harán con **un solo `qwen3.5:9b`** cargado una vez y reutilizado por todos los roles (agente A, agente B y orquestador/sintetizador), probando **agentes en paralelo** (fan-out / fan-in). El 27B queda para pruebas puntuales de calidad, **nunca** para multiagente concurrente, porque no hay RAM para dos modelos grandes a la vez.
+
 - [ ] He leído y entendido las limitaciones de mi hardware.
 
 ### 0.2. Diagnóstico del entorno actual
@@ -139,6 +141,8 @@ source ~/.zshrc
 Para 24 GB, la guía de referencia de octubre de 2026 es clara: **Qwen3.8 27B** (≈18 GB en Q4) es la mejor opción “todo terreno” para agentes, con un **79.8 % en Terminal-Bench 2.1**; para desarrollo rápido y bucles con mucho contexto, **Qwen3.5 9B** (≈6.6–7.6 GB) es el caballo de batalla.
 
 Descarga **primero el 9B** (te permite iterar sin esperas) y **luego el 27B** (para cuando necesites calidad).
+
+> **Nota del curso:** todos los ejercicios de agentes y el multiagente en paralelo se hacen con **`qwen3.5:9b`** (un solo modelo en RAM). El `qwen3.8:27b` se reserva para tareas puntuales de calidad que no requieran concurrencia.
 
 ```bash
 # Modelo ligero para desarrollo de lógica de agentes y loops
@@ -451,27 +455,45 @@ if __name__ == "__main__":
 
 ## Módulo 5 — Multiagente y proyecto final
 
-### 5.1. De un grafo de 3 nodos a un sistema multiagente real
+### 5.1. De un grafo de 3 nodos a un sistema multiagente en paralelo
 
-Ahora añade un nodo **Investigador** que lea archivos de un directorio local (simulando una herramienta de búsqueda) y pase los hallazgos al Redactor. El grafo queda:
+El patrón que vamos a probar es **fan-out / fan-in con un único modelo**:
 
 ```
-[Investigador] → [Planificador] → [Redactor] → [Revisor] → (condicional) → [Redactor] o [FIN]
+                      ┌──► [Agente A] ──┐
+[Tarea] ─► [Orquestador]                ├─► [Sintetizador] ─► [Entregable]
+                      └──► [Agente B] ──┘
 ```
 
-El Investigador usará una función Python determinista para leer `.md`/`.txt` de una carpeta `fuentes/`. Así el grafo combina **nodos deterministas** (lectura de archivos) con **nodos LLM** (planificar, redactar, revisar), que es exactamente el patrón de producción.
+- **Orquestador**: recibe la tarea, la descompone y lanza **dos agentes en paralelo**.
+- **Agente A** y **Agente B**: trabajan **simultáneamente** sobre subtareas distintas.
+- **Sintetizador**: espera ambas salidas (fan-in) y las **fusiona** en un entregable único.
 
-### 5.2. Proyecto final: “Agente de mantenimiento de repositorio”
+**Clave para 24 GB de RAM:** los tres roles usan el **mismo modelo `qwen3.5:9b`**, cargado una sola vez. En LangGraph cada nodo hace su propia llamada a `ChatOllama`, pero Ollama reutiliza el mismo peso en memoria: no se duplica la RAM por tener "tres agentes". El 27B no entra en este patrón (ocuparía ~16,5 GB y no habría margen para dos ramas concurrentes).
+
+El grafo en LangGraph sería:
+
+```
+START ─► orquestador ─┬─► agente_a ─┐
+                      └─► agente_b ─┴─► sintetizador ─► END
+```
+
+El **fan-out** se logra añadiendo dos aristas desde `orquestador`, y el **fan-in** con dos aristas hacia `sintetizador`. LangGraph espera a que ambas ramas terminen antes de ejecutar el nodo de síntesis.
+
+### 5.2. Proyecto final: “Agente de mantenimiento de repositorio (en paralelo)”
 
 Construye un sistema con LangGraph que:
 
 1. Se dispare manualmente (o por cambio en un directorio).
-2. Tenga nodos: **Analista** (lee TODOs/issues de archivos `.py`), **Implementador** (propone un parche) y **Verificador** (ejecuta un linter o test local).
-3. Si el Verificador falla, la arista condicional devuelve al Implementador con el error como contexto.
-4. Persista el estado en JSON/SQLite para reanudar tras cerrar el portátil.
-5. Use `qwen3.5:9b` para el Analista (rápido) y `qwen3.8:27b` para el Implementador (calidad).
+2. **Orquestador**: lee la petición y reparte el trabajo a dos agentes.
+3. **Agente A – Analista**: lee TODOs/issues de archivos `.py` (nodo parcialmente determinista).
+4. **Agente B – Implementador**: propone un parche **en paralelo** al Analista.
+5. **Sintetizador**: fusiona el análisis y el parche en una propuesta única y coherente.
+6. Un **Verificador** determinista (linter/test) valida el resultado; si falla, la arista condicional devuelve al Sintetizador/Implementador con el error como contexto.
+7. Persista el estado en JSON/SQLite para reanudar tras cerrar el portátil.
+8. **Todos los roles LLM usan `qwen3.5:9b`** (un único peso en RAM); el 27B queda para pruebas puntuales de calidad fuera del bucle multiagente.
 
-**Criterio de éxito:** el sistema detecta un TODO real, propone un cambio, lo verifica y, si falla, itera al menos una vez sin intervención manual.
+**Criterio de éxito:** el sistema reparte la tarea entre dos agentes en paralelo, el sintetizador produce una salida única, el verificador la valida y, si falla, itera al menos una vez sin intervención manual, todo en local con 24 GB.
 
 - [ ] Nodo Investigador añadido y funcionando con archivos locales.
 - [ ] Proyecto final ejecutado de principio a fin.
@@ -492,7 +514,7 @@ Construye un sistema con LangGraph que:
 | **7** | Cline + Aider en flujo real | Cambio multi-archivo revisado en git | `[ ]` |
 | **8** | Persistencia y presupuesto | Loop o grafo que sobrevive a reinicios | `[ ]` |
 | **9** | Proyecto final: diseño | Diagrama del grafo + esqueleto de código | `[ ]` |
-| **10** | Proyecto final: ejecución | Sistema multiagente end-to-end en local | `[ ]` |
+| **10** | Proyecto final: ejecución | Agentes en paralelo + orquestador (todo `qwen3.5:9b`) en local | `[ ]` |
 
 ---
 
