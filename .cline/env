@@ -1,0 +1,44 @@
+# Configuración de variables de entorno para Cline
+# Copia este archivo a ~/.cline o edita directamente ~/.cline/env
+
+# ==================== CONFIGURACIÓN DE MODELOS ====================
+
+# Modelo por defecto (modo ACT - rápido)
+# Opciones: qwen3.5:9b (rápido), qwen3.8:27b (profundo)
+CLINE_ASSISTANT_MODEL=qwen3.5:9b
+
+# Host de Ollama
+CLINE_ASSISTANT_OLLAMA_HOST=http://localhost:11434
+
+# ==================== MODO PLAN (27B) ====================
+# Para activar modo PLAN (razonamiento profundo):
+# 1. Exportar variable: export CLINE_ASSISTANT_MODEL=qwen3.8:27b
+# 2. Reiniciar VSCode o Cline
+
+# ==================== MODO ACT (9B) ====================
+# Para activar modo ACT (rápido, por defecto):
+# 1. Exportar variable: export CLINE_ASSISTANT_MODEL=qwen3.5:9b
+# 2. Reiniciar VSCode o Cline
+
+# ==================== RECOMENDACIONES ====================
+# Modo PLAN (qwen3.8:27b):
+#   - Uso: Planificación compleja, razonamiento profundo, análisis extenso
+#   - Tiempo de respuesta: ~30 segundos
+#   - RAM requerida: ~18GB
+#   - Thinking en español: ✅
+#
+# Modo ACT (qwen3.5:9b):
+#   - Uso: Edición rápida, respuestas simples, iteraciones frecuentes
+#   - Tiempo de respuesta: ~2.5 segundos
+#   - RAM requerida: ~5.7GB
+#   - Thinking en inglés: ✅
+
+# ==================== COMANDOS ÚTILES ====================
+# Activar modo PLAN (bash):
+#   source ~/.cline/env && export CLINE_ASSISTANT_MODEL=qwen3.8:27b
+#
+# Activar modo ACT (bash):
+#   source ~/.cline/env && export CLINE_ASSISTANT_MODEL=qwen3.5:9b
+#
+# Verificar modelo actual:
+#   echo $CLINE_ASSISTANT_MODEL

@@ -1,0 +1,66 @@
+# Configuración de Aider para uso con Ollama
+# Directorio: /Users/carlosgorostizaga2/Documents/wks/pruebas/agentes-locales
+
+# ==================== CONFIGURACIÓN GENERAL ====================
+# Modelo por defecto (modo ACT - rápido)
+model: qwen3.5:9b
+
+# Host de Ollama
+ollama_host: http://localhost:11434
+
+# ==================== CONFIGURACIÓN DE MODELOS ====================
+# Modelos disponibles para cambiar dinámicamente:
+# - qwen3.5:9b (modo ACT - rápido, ~5.7GB)
+# - qwen3.8:27b (modo PLAN - razonamiento profundo, ~18GB)
+
+# ==================== CONFIGURACIÓN DE CONTEXTO ====================
+# Tamaño de contexto (en tokens)
+context_window: 16384
+
+# ==================== CONFIGURACIÓN DE GENERACIÓN ====================
+# Temperatura para generación de texto
+temperature: 0.6
+
+# Máximo de tokens por respuesta
+max_tokens: 4096
+
+# ==================== HERRAMIENTAS ====================
+# Habilitar herramientas para function calling
+tools:
+  - ollama
+
+# ==================== CONFIGURACIÓN DE CÓDIGO ====================
+# Contexto de código para análisis
+code_context: 4096
+
+# Habilitar análisis de código
+analyze_code: true
+
+# ==================== CONFIGURACIÓN DE SEGURIDAD ====================
+safe_mode: false
+
+# ==================== LOGS ====================
+log_level: INFO
+
+# ==================== INSTRUCCIONES DE USO ====================
+# Para cambiar al modelo de 27B (modo PLAN):
+#   1. Detener Aider con Ctrl+C
+#   2. Ejecutar: ollama run qwen3.8:27b
+#   3. Reiniciar Aider
+#
+# O usar el comando dentro de Aider:
+#   /model qwen3.8:27b
+#
+# Para volver al modelo de 9B (modo ACT):
+#   /model qwen3.5:9b
+#
+# ==================== RECOMENDACIONES ====================
+# Modo PLAN (27B):
+#   - Uso: Planificación compleja, razonamiento profundo, análisis extenso
+#   - Tiempo de respuesta: ~30 segundos
+#   - RAM requerida: ~18GB
+#
+# Modo ACT (9B):
+#   - Uso: Edición rápida, respuestas simples, iteraciones frecuentes
+#   - Tiempo de respuesta: ~2.5 segundos
+#   - RAM requerida: ~5.7GB
