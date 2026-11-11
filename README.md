@@ -3,8 +3,8 @@
 Workspace del curso **"De Cero a Master en LLMs Locales, Agentes y Orquestación
 Multiagente"**, ejecutándose 100 % en local con Ollama.
 
-**Hardware:** Mac Apple Silicon M5 · 24 GB RAM unificada · macOS (2026)
-**Stack:** Ollama · LM Studio · LM Studio Bionic · Python 3.12 + LangGraph
+**Hardware:** Mac Apple Silicon M5 · 24 GB RAM unificada · macOS (2026) · **arm64 nativo**
+**Stack:** Ollama · LM Studio · Python 3.12 + LangGraph 1.2 · Aider 0.86 · Cline
 
 > **Documento central del curso:** [`curso-agentes-locales.md`](./curso-agentes-locales.md).
 > Marca las casillas `[ ]` a medida que completes cada módulo. Abre los `.md` en
@@ -52,25 +52,29 @@ se han creado (ver `NOTAS-MODULO1.md` para las desviaciones respecto al curso).
 
 ## Estado actual del entorno
 
-Verificado el 2026-10-31 (detalle en [`NOTAS-MODULO1.md`](./NOTAS-MODULO1.md)):
+Verificado el **2026-11-11**, tras la migración completa a **arm64 nativo**
+(histórico y detalles en [`NOTAS-MODULO1.md`](./NOTAS-MODULO1.md)):
 
 | Pieza | Estado | Detalle |
 |---|---|---|
-| Homebrew | ✅ | 7.0.11 (prefix `/usr/local`, Rosetta) |
-| Python | ✅ | 3.12.9 |
-| Git | ⚠️ | 2.54.0 (Apple Git-157) · usar `arch -arm64 /usr/bin/git` (ver *Solución de problemas*) |
+| Arquitectura | ✅ | `arm64` nativo · sin Rosetta · sin MacPorts |
+| Homebrew | ✅ | 7.0.13 en `/opt/homebrew` (arm64) |
+| Python | ✅ | 3.12.9 (framework python.org, universal) |
+| Git | ✅ | 2.54.0 (Apple Git-157) · `git` funciona directo (ya **no** hace falta `arch -arm64`) |
 | Ollama | ✅ | 0.40.13 · **Ollama.app** (no Homebrew) · `127.0.0.1:11434` |
 | LM Studio | ✅ | 0.4.28 · CLI `lms` en `~/.lmstudio/bin` · servidor en `:1234` |
-| Modelos | ✅ | `qwen3.5:9b` (5,7 GB), `qwen3.8:27b` (16 GB), `nomic-embed-text` |
-| venv | ✅ | `.venv` (Python 3.12.9) en la raíz del proyecto |
-| Paquetes | ✅ | `ollama` 0.6.3, `langchain` 1.4.7, `langchain-ollama` 1.1.0, `langgraph` 1.2.19, `python-dotenv`, `rich` |
+| Modelos | ✅ | `qwen3.5:9b` (5,7 GB), `qwen3.8:27b` (18 GB), `nomic-embed-text` (274 MB) |
+| venv | ✅ | `.venv` Python 3.12.9 · 133 paquetes · activar: `source .venv/bin/activate` |
+| Paquetes | ✅ | `ollama` 0.6.3, `langchain` 1.4.7, `langchain-ollama` 1.1.0, `langgraph` 1.2.19, `langgraph-checkpoint` 4.3.1, `aider-chat` 0.86.2, `python-dotenv`, `rich` |
+| Disco | ✅ | Solo `~/.ollama/models` (22 GB). Los GGUF fuente y los logs ya se eliminaron |
 
 **Desviaciones importantes respecto al curso:**
 1. Ollama **no** está instalado con Homebrew (vino con `Ollama.app`). No ejecutes
    `brew install ollama` / `brew services start ollama` mientras la app esté activa.
 2. El venv vive en la raíz del proyecto: `cd agentes-locales && source .venv/bin/activate`.
 3. Los modelos se importaron **desde GGUF de HuggingFace**, no con `ollama pull`
-   (el CDN de blobs de Ollama no es accesible desde esta red). Recetas en `Modelfile.*`.
+   (el CDN de blobs de Ollama no era accesible desde esta red). Recetas en `Modelfile.*`.
+   Los `.gguf` ya se borraron: `ollama create` copió los pesos a `~/.ollama/models`.
 4. El 27B se creó con `num_ctx 16384` (no 32K) para evitar swap con 24 GB de RAM.
 
 ---
@@ -90,11 +94,15 @@ agentes-locales/
 ├── .gitignore                   # exclusión de artefactos locales
 ├── scripts/
 │   ├── 01_analisis_duplicados.py        # OBSOLETO: solo informativo (por tamaño)
-│   └── 03_auditoria_blobs_huerfanos.py  # auditor real de blobs (SHA256/manifests)
-├── .venv/                       # (ignorado) entorno virtual Python
-├── gguf/                        # (ignorado) pesos fuente en GGUF (~21 GB)
-└── .logs/                       # (ignorado) logs de descarga/importación
+│   ├── 03_auditoria_blobs_huerfanos.py  # auditor real de blobs (SHA256/manifests)
+│   └── entorno/
+│       ├── ollama-env.sh                # variables de Ollama (sourceado desde ~/.zshrc)
+│       └── verificar_memoria.sh         # pre-flight: ¿cabe el modelo en RAM?
+└── .venv/                       # (ignorado) entorno virtual Python 3.12
 ```
+
+Los modelos viven solo en `~/.ollama/models` (22 GB). **No** hay copias `.gguf`
+en el repo: se eliminaron tras importarlos con `ollama create`.
 
 ---
 
@@ -142,6 +150,31 @@ Agrupa blobs por **tamaño** de archivo. Esos grupos **no** son duplicados reale
 los tensores de un modelo suelen compartir tamaño exacto con hash distinto.
 **No borres nada basándote en este script.** Úsalo únicamente para estadísticas.
 
+### 4. `scripts/entorno/verificar_memoria.sh` — pre-flight de RAM
+
+Comprueba si un modelo **cabe en memoria antes de cargarlo**. Solo lectura: no
+mata procesos, no pide sudo, no modifica nada.
+
+```bash
+./scripts/entorno/verificar_memoria.sh               # comprueba qwen3.5:9b
+./scripts/entorno/verificar_memoria.sh qwen3.8:27b   # un modelo instalado
+./scripts/entorno/verificar_memoria.sh --size 18     # tamaño arbitrario en GB
+```
+
+Códigos de salida: `0` = OK/ajustado · `2` = no cabe · `1` = error.
+
+### 5. `scripts/entorno/ollama-env.sh` — variables de Ollama
+
+Se **sourcea** (no se ejecuta). Ya está enganchado en `~/.zshrc`, así que cada
+terminal arranca con:
+
+| Variable | Valor | Efecto |
+|---|---|---|
+| `OLLAMA_KEEP_ALIVE` | `30m` | mantiene el modelo caliente durante la sesión |
+| `OLLAMA_NUM_PARALLEL` | `1` | una sola petición concurrente (sin KV cache extra) |
+
+Modo puntual sin reiniciar la terminal: `source scripts/entorno/ollama-env.sh`.
+
 ---
 
 ## Distinción clave: duplicados vs. huérfanos
@@ -173,7 +206,7 @@ python3 scripts/03_auditoria_blobs_huerfanos.py --delete
 ollama stop qwen3.8:27b
 ```
 
-Estado de referencia: 0 blobs huérfanos, disco de Ollama en ~22,47 GB.
+Estado de referencia (2026-11-11): 0 blobs huérfanos, disco de Ollama en ~22 GB.
 
 ---
 
@@ -193,9 +226,10 @@ ollama pull qwen3.5:9b
 ollama pull qwen3.8:27b
 ```
 
-Los `.gguf` en `gguf/` son los pesos fuente. `ollama create` ya copió los pesos a
-`~/.ollama/models`, por lo que `gguf/` puede borrarse si se necesita liberar
-~21 GB (sin afectar a los modelos operativos): `rm -rf gguf/ .logs/`.
+Los `.gguf` de `gguf/` eran los pesos fuente y **ya se eliminaron** (21 GB
+liberados): `ollama create` copió los pesos a `~/.ollama/models`. Si alguna vez
+hay que reimportar, descarga de nuevo los GGUF de HuggingFace y usa los
+`Modelfile.*` (las recetas sí están en el repo).
 
 ---
 
@@ -204,7 +238,7 @@ Los `.gguf` en `gguf/` son los pesos fuente. `ollama create` ya copió los pesos
 Dos herramientas apuntan a Ollama en `http://localhost:11434`:
 
 - **Cline** → `.cline/env` (`CLINE_ASSISTANT_MODEL`, `CLINE_ASSISTANT_OLLAMA_HOST`)
-- **Aider** → `.aider.conf.yml` (`model: qwen3.5:9b`, `ollama_host`) — opcional, aún no instalado
+- **Aider** → `.aider.conf.yml` (`model: qwen3.5:9b`, `ollama_host`) — instalado en `.venv` (`aider-chat` 0.86.2)
 
 Eje **Modelo** (qué cerebro) vs. Eje **Modo** (Plan/Act): son independientes.
 Recomendado: `qwen3.5:9b` para iterar rápido, `qwen3.8:27b` para calidad, con
@@ -238,8 +272,9 @@ En LangGraph esto es un **fan-out** (Orquestador → A y B) y un **fan-in**
 `.gitignore` excluye: `.venv/`, `.logs/`, `gguf/`, `__pycache__/`, `*.pyc`,
 `.DS_Store`, `.env`.
 
-⚠️ **Antes de hacer `git add/commit`, lee "Solución de problemas"** — el binario
-de `git` falla bajo Rosetta en este equipo. Usa `arch -arm64 /usr/bin/git`.
+El repo solo versiona el curso, las notas, los scripts y las configuraciones de
+agentes: **nada pesado** (los modelos viven en `~/.ollama/models`). `git`
+funciona directamente, sin `arch -arm64` (arm64 nativo desde el 2026-11-11).
 
 ---
 
@@ -248,7 +283,6 @@ de `git` falla bajo Rosetta en este equipo. Usa `arch -arm64 /usr/bin/git`.
 | Síntoma | Causa | Solución |
 |---|---|---|
 | `curl localhost:11434` no responde | Ollama no está corriendo | Abre `Ollama.app` o ejecuta `./ollama-helper.sh` |
-| `git` lanza `libxcrun ... need 'x86_64'` | Terminal bajo **Rosetta** con CommandLineTools arm64 | Usa `arch -arm64 /usr/bin/git <cmd>` (o una terminal arm64 nativa); comprueba `uname -m` |
 | El modelo devuelve texto en vez de `tool_calls` | El modelo no soporta tools o el prompt no las declara | Usa `qwen3.5:9b` / `qwen3.8:27b` (tag `tools`) |
 | El Mac se ralentiza con el 27B | Contexto/swap excesivo | Baja `num_ctx`, usa `qwen3.5:9b` o `ollama stop` |
 | Dos servidores Ollama en conflicto | `brew` + `Ollama.app` a la vez | Mantén solo `Ollama.app`; no uses `brew services` |

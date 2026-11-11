@@ -6,16 +6,16 @@
 
 | Pieza | Estado | Detalle |
 |---|---|---|
-| Homebrew | ✅ | 7.0.11 (prefix `/usr/local`, Rosetta) |
+| Homebrew | ✅ | 7.0.13 (prefix `/opt/homebrew`, **arm64**) |
 | Python | ✅ | 3.12.9 (`/Library/Frameworks/Python.framework/Versions/3.12`) |
-| Git | ⚠️ | 2.54.0 (Apple Git-157) · ejecutar con `arch -arm64 /usr/bin/git` (ver *Git bajo Rosetta*) |
+| Git | ✅ | 2.54.0 (Apple Git-157) · nativo arm64, sin `arch -arm64` |
 | Ollama | ✅ | 0.40.13 · **Ollama.app** (no Homebrew), sirviendo en `127.0.0.1:11434` |
 | LM Studio | ✅ | app 0.4.28 · CLI `lms` en `~/.lmstudio/bin` · servidor ON en `:1234` |
 | Modelos | ✅ | `qwen3.5:9b` (5,7 GB) y `qwen3.8:27b` (16 GB) importados desde GGUF + `nomic-embed-text` |
 | venv | ✅ | `.venv` (Python 3.12.9) en la raíz del proyecto |
 | Paquetes | ✅ | `ollama` 0.6.3, `langchain` 1.4.7, `langchain-ollama` 1.1.0, `langgraph` 1.2.19, `python-dotenv`, `rich` |
 | Cline | ✅ | `saoudrizwan.claude-dev` 4.1.26 (proveedor configurado en la UI) |
-| Aider | ⏳ | Opcional (1.8), no instalado |
+| Aider | ✅ | `aider-chat` 0.86.2 dentro de `.venv` |
 
 ## Desviaciones respecto al documento del curso
 
@@ -32,25 +32,28 @@
 5. El 27B se creó con `num_ctx 16384` (no 32K) para no arriesgar swap con 24 GB de RAM.
    Cargó en ~6 s sin swap (`vm.swapusage` = 0) y respondió el tool call en ~10 s.
 
-## Git bajo Rosetta (importante)
+## Git (resuelto: arm64 nativo)
 
-El terminal de este equipo arranca en **x86_64 (Rosetta)** mientras las CommandLineTools son arm64,
-por lo que `git` falla con `libxcrun ... need 'x86_64'`. Solución inmediata, sin reinstalar nada:
+Hasta el 2026-10-31 el terminal arrancaba en **x86_64 (Rosetta)** mientras las CommandLineTools
+son arm64, y `git` fallaba con `libxcrun ... need 'x86_64'`; había que usar
+`arch -arm64 /usr/bin/git ...`.
+
+Tras la migración del **2026-11-11** (`uname -m` = `arm64`, sin Rosetta ni MacPorts), `git`
+funciona directamente:
 
 ```bash
-arch -arm64 /usr/bin/git status
-arch -arm64 /usr/bin/git add -A
-arch -arm64 /usr/bin/git commit -m "..."
+git status
+git add -A
+git commit -m "..."
 ```
-
-Instalar un `git` con Homebrew **no** ayuda: Homebrew vive en `/usr/local` (x86_64), así que instalaría un binario x86_64.
 
 ## Comandos de trabajo
 
 ```bash
-source .venv/bin/activate          # entorno del curso
-./ollama-helper.sh                 # gestor de modelos: ver / cargar / RAM+swap / auditar blobs
-arch -arm64 /usr/bin/git status    # git nativo arm64
+source .venv/bin/activate                # entorno del curso
+./ollama-helper.sh                       # gestor de modelos: ver / cargar / RAM+swap / auditar blobs
+./scripts/entorno/verificar_memoria.sh   # pre-flight: ¿cabe el modelo en RAM?
+git status                               # git nativo arm64
 ```
 
 ## Modelos
@@ -65,12 +68,10 @@ ollama create qwen3.8:27b -f Modelfile.qwen3.8-27b
 # ollama pull qwen3.8:27b
 ```
 
-Los `.gguf` en `gguf/` pueden borrarse una vez importados: `ollama create` copia los pesos a `~/.ollama/models`.
-Ocupan ~21 GB, los mismos que ya tienes duplicados en `~/.ollama`:
-
-```bash
-rm -rf gguf/ .logs/    # libera ~21 GB sin afectar a los modelos de Ollama
-```
+Los `.gguf` de `gguf/` **ya se eliminaron** el 2026-11-11 junto con `.logs/`: `ollama create`
+copió los pesos a `~/.ollama/models`, así que eran ~21 GB duplicados. Verificado después del
+borrado: `qwen3.5:9b` sigue respondiendo (100 % GPU, contexto 8192). Para reimportar habría que
+volver a descargar los GGUF de HuggingFace y usar `Modelfile.qwen3.5-9b` / `Modelfile.qwen3.8-27b`.
 
 ## Resultados de las pruebas (Módulo 1)
 
@@ -122,3 +123,25 @@ Tarea ───►  Orquestador                          ├──► Sintetizad
 - El 27B queda para pruebas puntuales de calidad, **nunca** para multiagente en paralelo.
 
 Detalle en `curso-agentes-locales.md` (Módulo 5).
+
+---
+
+## Migración a arm64 (2026-11-11)
+
+Estado final del entorno tras la migración completa:
+
+- Homebrew x86_64 (`/usr/local`) → **Homebrew 7.0.13 en `/opt/homebrew`** (arm64).
+- **MacPorts eliminado** por completo (`/opt/local`, ~479 MB) y restos de `/usr/local`
+  limpiados (symlinks roto y directorios huérfanos).
+- `~/.zprofile` corregido (dejaba el `PATH` vacío) y `~/.bashrc` ahora carga `brew shellenv`.
+- Los **GGUF fuente (21 GB)** y los **logs de descarga** eliminados: los modelos viven
+  solo en `~/.ollama/models`.
+- Scripts one-shot de la migración **archivados fuera del repo** en
+  `~/homebrew_migracion_backup_2026-11-11/scripts-memory-cleaner/`.
+- En el repo quedan solo las utilidades vivas: `scripts/entorno/ollama-env.sh` (sourceado
+  desde `~/.zshrc`) y `scripts/entorno/verificar_memoria.sh`.
+
+> Nota VS Code: si el terminal intenta lanzar `/usr/local/bin/bash`, cierra la pestaña
+> de terminal antigua y abre una nueva. El perfil por defecto ya apunta a `/bin/bash` y
+> `terminal.integrated.enablePersistentSessions` está desactivado para no restaurar
+> terminales de sesiones anteriores.

@@ -113,21 +113,22 @@ lms status
 lms ls
 ```
 
-**Git bajo Rosetta (importante):** el terminal de este equipo arranca en **x86_64 (Rosetta)** mientras las CommandLineTools son arm64, por lo que `git` puede fallar con `libxcrun ... need 'x86_64'`. Solución sin reinstalar nada:
+**Git (arm64 nativo):** este equipo ya está migrado a **arm64 nativo** (Homebrew en `/opt/homebrew`, sin Rosetta ni MacPorts), así que `git` funciona directamente:
 
 ```bash
-arch -arm64 /usr/bin/git status
-arch -arm64 /usr/bin/git add -A
-arch -arm64 /usr/bin/git commit -m "..."
+git status
+git add -A
+git commit -m "..."
 ```
 
-Instalar un `git` con Homebrew **no** ayuda: Homebrew vive en `/usr/local` (x86_64).
+> Histórico: hasta el 2026-10-31 la terminal arrancaba en x86_64 (Rosetta) y hacía falta
+> `arch -arm64 /usr/bin/git ...`. Ese apaño **ya no es necesario**.
 
 **Práctica 1.2**
 
 - [ ] `curl` de `/api/tags` devuelve JSON.
 - [ ] `lms status` responde.
-- [ ] `uname -m` muestra `x86_64` y `arch -arm64 /usr/bin/git --version` muestra la versión de Git.
+- [ ] `uname -m` muestra `arm64` y `git --version` responde sin `arch -arm64`.
 
 ---
 
@@ -148,6 +149,10 @@ ollama pull qwen3.8:27b
 ollama create qwen3.5:9b  -f Modelfile.qwen3.5-9b
 ollama create qwen3.8:27b -f Modelfile.qwen3.8-27b
 ```
+
+> **Ya hecho en este equipo:** ambos modelos están importados en `~/.ollama/models` y los
+> `.gguf` fuente se borraron (21 GB liberados). Los `Modelfile.*` hacen `FROM ./gguf/...`,
+> así que solo sirven si vuelves a descargar los GGUF en `gguf/`.
 
 **Alternativas útiles** (no las descargues todas):
 
@@ -851,7 +856,6 @@ El sistema `mtto_repo.py` del proyecto final cumpliendo todos los criterios ante
 | Síntoma | Causa probable | Solución |
 |---|---|---|
 | `curl localhost:11434` → connection refused | Ollama.app no está arrancada | Abre `Ollama.app`; **no** uses `brew services` |
-| `git: libxcrun ... need 'x86_64'` | Terminal en Rosetta, CLT arm64 | `arch -arm64 /usr/bin/git ...` |
 | `ollama pull` se cuelga | CDN de blobs inaccesible | Vía GGUF + `Modelfile.*` + `ollama create` |
 | El modelo ignora las tools | `tools` mal formado | Revisa `"type": "function"` y el JSON Schema |
 | El modelo devuelve texto en vez de JSON | `format` no forzado | `format="json"` + `temperature` baja |
@@ -875,9 +879,9 @@ ollama create qwen3.5:9b -f Modelfile.qwen3.5-9b
 lms status
 lms ls
 
-# Git (Rosetta)
-arch -arm64 /usr/bin/git status
-arch -arm64 /usr/bin/git diff --stat
+# Git (arm64 nativo)
+git status
+git diff --stat
 
 # Python
 source .venv/bin/activate
@@ -890,15 +894,26 @@ python -c "import ollama, langgraph; print('OK')"
 
 ```
 agentes-locales/
-├── README.md                 # índice operativo
-├── curso-agentes-locales.md  # este curso (3 etapas)
-├── NOTAS-MODULO1.md          # desviaciones reales respecto al curso
-├── ollama-helper.sh          # helper: estado, RAM/swap, modelos
-├── Modelfile.qwen3.5-9b      # receta desde GGUF (9B)
-├── Modelfile.qwen3.8-27b     # receta desde GGUF (27B)
-├── .venv/                    # entorno Python
+├── README.md                     # índice operativo
+├── curso-agentes-locales.md      # este curso (3 etapas)
+├── NOTAS-MODULO1.md              # desviaciones reales respecto al curso
+├── ollama-helper.sh              # helper: estado, RAM/swap, modelos
+├── Modelfile.qwen3.5-9b          # receta desde GGUF (9B)
+├── Modelfile.qwen3.8-27b         # receta desde GGUF (27B)
+├── .aider.conf.yml               # config de Aider → Ollama
+├── .cline/env                    # config de Cline → Ollama
+├── scripts/
+│   ├── 01_analisis_duplicados.py        # informativo (obsoleto)
+│   ├── 03_auditoria_blobs_huerfanos.py  # auditor de blobs por SHA256
+│   └── entorno/
+│       ├── ollama-env.sh                # variables de Ollama (sourceado)
+│       └── verificar_memoria.sh         # pre-flight de RAM
+├── .venv/                        # entorno Python 3.12 (ignorado)
 └── .gitignore
 ```
+
+> Los modelos `qwen3.5:9b` / `qwen3.8:27b` ya están importados en `~/.ollama/models`.
+> Los `.gguf` de origen se borraron para liberar 21 GB.
 
 ---
 
