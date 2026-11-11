@@ -134,6 +134,8 @@ Estado final del entorno tras la migración completa:
 - **MacPorts eliminado** por completo (`/opt/local`, ~479 MB) y restos de `/usr/local`
   limpiados (symlinks roto y directorios huérfanos).
 - `~/.zprofile` corregido (dejaba el `PATH` vacío) y `~/.bashrc` ahora carga `brew shellenv`.
+- Credential helper de git repuntado con `gh auth setup-git`: ya no usa el
+  `/usr/local/bin/gh` inexistente, sino `/opt/homebrew/bin/gh`.
 - Los **GGUF fuente (21 GB)** y los **logs de descarga** eliminados: los modelos viven
   solo en `~/.ollama/models`.
 - Scripts one-shot de la migración **archivados fuera del repo** en
