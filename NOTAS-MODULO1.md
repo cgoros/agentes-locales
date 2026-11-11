@@ -153,3 +153,21 @@ Estado final del entorno tras la migración completa:
 > de terminal antigua y abre una nueva. El perfil por defecto ya apunta a `/bin/bash` y
 > `terminal.integrated.enablePersistentSessions` está desactivado para no restaurar
 > terminales de sesiones anteriores.
+
+---
+
+## Sistema de estudio: profesor Cline (2026-11-11)
+
+El curso se estudia con **Cline como profesor**, no como "hacedor". El rol está
+definido en [`CLAUDE.md`](./CLAUDE.md), que Cline carga automáticamente al abrir
+el workspace (funciona con cualquier modelo: DeepSeek-v4, qwen local, etc.).
+
+- **Arranque de cada sesión:** escribir `modo profesor`.
+- **Progreso:** las casillas `[ ]` / `[x]` de `curso-agentes-locales.md` son la
+  única fuente de verdad; las marca el alumno (o se pide `márcalo`).
+- **Ayuda:** `no entiendo <tema>`, `pista`, `revísame <fichero>`, `hazlo tú`, `progreso`.
+- **Enfoque:** el curso se recorre **desde 1.1 en modo repaso**, aunque el entorno
+  ya esté montado, para detectar cualquier cosa que se hubiera escapado.
+- **Guía completa para el alumno:** sección *"Cómo estudiar con el profesor
+  (Cline)"* del `README.md`.
+

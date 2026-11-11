@@ -231,9 +231,9 @@ pip install ollama langgraph langchain langchain-ollama python-dotenv rich
 
 **Práctica 1.5**
 
-- [x] `.venv` activado.
-- [x] `pip list` muestra `langgraph`, `langchain-ollama` y `ollama`.
-- [x] `python -c "import ollama, langgraph; print('OK')"` imprime `OK`.
+- [ ] `.venv` activado.
+- [ ] `pip list` muestra `langgraph`, `langchain-ollama` y `ollama`.
+- [ ] `python -c "import ollama, langgraph; print('OK')"` imprime `OK`.
 
 ---
 

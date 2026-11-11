@@ -15,17 +15,18 @@ Multiagente"**, ejecutándose 100 % en local con Ollama.
 ## Índice
 
 1. [El núcleo: el curso](#el-núcleo-el-curso)
-2. [Estado actual del entorno](#estado-actual-del-entorno)
-3. [Estructura del workspace](#estructura-del-workspace)
-4. [Funciones disponibles](#funciones-disponibles)
-5. [Distinción clave: duplicados vs. huérfanos](#distinción-clave-duplicados-vs-huérfanos)
-6. [Flujo de mantenimiento de Ollama](#flujo-de-mantenimiento-de-ollama)
-7. [Gestión de modelos (GGUF vs. pull)](#gestión-de-modelos-gguf-vs-pull)
-8. [Configuración de agentes de código](#configuración-de-agentes-de-código)
-9. [Planteamiento multiagente (agentes en paralelo)](#planteamiento-multiagente-agentes-en-paralelo)
-10. [Git y .gitignore](#git-y-gitignore)
-11. [Solución de problemas](#solución-de-problemas)
-12. [Hoja de ruta del curso](#hoja-de-ruta-del-curso)
+2. [Cómo estudiar con el profesor (Cline)](#cómo-estudiar-con-el-profesor-cline)
+3. [Estado actual del entorno](#estado-actual-del-entorno)
+4. [Estructura del workspace](#estructura-del-workspace)
+5. [Funciones disponibles](#funciones-disponibles)
+6. [Distinción clave: duplicados vs. huérfanos](#distinción-clave-duplicados-vs-huérfanos)
+7. [Flujo de mantenimiento de Ollama](#flujo-de-mantenimiento-de-ollama)
+8. [Gestión de modelos (GGUF vs. pull)](#gestión-de-modelos-gguf-vs-pull)
+9. [Configuración de agentes de código](#configuración-de-agentes-de-código)
+10. [Planteamiento multiagente (agentes en paralelo)](#planteamiento-multiagente-agentes-en-paralelo)
+11. [Git y .gitignore](#git-y-gitignore)
+12. [Solución de problemas](#solución-de-problemas)
+13. [Hoja de ruta del curso](#hoja-de-ruta-del-curso)
 
 ---
 
@@ -44,9 +45,51 @@ El calendario detallado (**16 semanas**) está al final del curso, repartido por
 Los apéndices A–E cubren: solución de problemas, comandos rápidos, estructura real
 del workspace, extensiones de VS Code y un glosario/checklist de conceptos.
 
-**Progreso real:** Etapa 1, módulos **1.1–1.6** completados: hardware, stack, modelos,
-tool calling y `prompt_agente.py` (agente de resumen con JSON estricto, **10/10** en ~9 s).
-Pendiente: 1.7 (Cline/Aider en la UI) y las Etapas 2–3 (ver `NOTAS-MODULO1.md`).
+**Estado del estudio:** el curso se recorre **desde el principio en modo repaso**
+(1.1 → 1.7 → Entregable E1 → Etapas 2–3), aunque el entorno ya esté montado y
+`prompt_agente.py` funcione (JSON estricto **10/10** en ~9 s). Las casillas de
+`curso-agentes-locales.md` se marcan a medida que el profesor confirma cada práctica.
+
+---
+
+## Cómo estudiar con el profesor (Cline)
+
+Cline actúa como **profesor** gracias a [`CLAUDE.md`](./CLAUDE.md), que se carga
+automáticamente al abrir este workspace (no hay que configurar nada en la UI y
+funciona con cualquier modelo: DeepSeek-v4, qwen local, etc.).
+
+### Rutina de cada sesión
+
+1. Abre VS Code en este workspace y escribe en Cline: **"modo profesor"**.
+2. Te sitúa leyendo las casillas de `curso-agentes-locales.md` y te lanza la
+   siguiente práctica.
+3. Haz el ejercicio tú. Cuando necesites ayuda:
+
+   | Escribes... | Cline hace... |
+   |---|---|
+   | `no entiendo <tema>` | Explicación desde cero, sin dar por sabido nada |
+   | `pista` | Una sola pista, sin la solución |
+   | `revísame <fichero>` | Lo ejecuta, mide (10/10, tiempos) y dice qué falla y por qué |
+   | `hazlo tú` | Lo resuelve como *ejemplo resuelto* (después reescríbelo tú) |
+   | `progreso` | Resumen de lo hecho y lo que falta |
+
+4. Al terminar una práctica, **márcala tú** en `curso-agentes-locales.md`
+   (`[ ]` → `[x]`). También puedes pedir: **"márcalo"**.
+5. Antes de avanzar pregunta: **"¿paso al siguiente?"**.
+
+> **Repaso desde el principio:** el curso arranca con **todas las casillas sin
+> marcar** para poder repasar 1.1–1.7 aunque ya tengas parte hecha. El profesor
+> verifica cada práctica con 1–2 comandos; lo que ya domines se marca rápido.
+
+### Seguimiento del progreso
+
+- **Única fuente de verdad:** las casillas `[ ]` / `[x]` de `curso-agentes-locales.md`.
+- **Quién marca:** tú, al superar la práctica. El profesor verifica, pero no marca
+  salvo que pidas "márcalo".
+- **Apuntes y desviaciones:** `NOTAS-MODULO1.md`.
+- **La hoja de ruta** (16 semanas, al final de este README y del curso) es
+  planificación, no progreso.
+- **Regla del curso:** no pases de práctica hasta que funcione (p. ej. 10/10 JSON).
 
 ---
 
