@@ -58,6 +58,10 @@ Cline actúa como **profesor** gracias a [`CLAUDE.md`](./CLAUDE.md), que se carg
 automáticamente al abrir este workspace (no hay que configurar nada en la UI y
 funciona con cualquier modelo: DeepSeek-v4, qwen local, etc.).
 
+> **Compatibilidad:** Cline lee `CLAUDE.md` automáticamente. Si tu versión no lo
+> hiciera, abre *Settings → Custom Instructions* y pega:
+> `Actúa como el profesor definido en ./CLAUDE.md (curso de agentes locales).`
+
 ### Rutina de cada sesión
 
 1. Abre VS Code en este workspace y escribe en Cline: **"modo profesor"**.
