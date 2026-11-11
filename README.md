@@ -44,9 +44,9 @@ El calendario detallado (**16 semanas**) está al final del curso, repartido por
 Los apéndices A–E cubren: solución de problemas, comandos rápidos, estructura real
 del workspace, extensiones de VS Code y un glosario/checklist de conceptos.
 
-**Progreso real:** Etapa 1, módulos **1.1–1.4** completados (hardware, stack, modelos
-y tool calling verificado). Los scripts de 1.6 en adelante y las Etapas 2–3 aún no
-se han creado (ver `NOTAS-MODULO1.md` para las desviaciones respecto al curso).
+**Progreso real:** Etapa 1, módulos **1.1–1.6** completados: hardware, stack, modelos,
+tool calling y `prompt_agente.py` (agente de resumen con JSON estricto, **10/10** en ~9 s).
+Pendiente: 1.7 (Cline/Aider en la UI) y las Etapas 2–3 (ver `NOTAS-MODULO1.md`).
 
 ---
 
@@ -64,8 +64,9 @@ Verificado el **2026-11-11**, tras la migración completa a **arm64 nativo**
 | Ollama | ✅ | 0.40.13 · **Ollama.app** (no Homebrew) · `127.0.0.1:11434` |
 | LM Studio | ✅ | 0.4.28 · CLI `lms` en `~/.lmstudio/bin` · servidor en `:1234` |
 | Modelos | ✅ | `qwen3.5:9b` (5,7 GB), `qwen3.8:27b` (18 GB), `nomic-embed-text` (274 MB) |
-| venv | ✅ | `.venv` Python 3.12.9 · 133 paquetes · activar: `source .venv/bin/activate` |
-| Paquetes | ✅ | `ollama` 0.6.3, `langchain` 1.4.7, `langchain-ollama` 1.1.0, `langgraph` 1.2.19, `langgraph-checkpoint` 4.3.1, `aider-chat` 0.86.2, `python-dotenv`, `rich` |
+| venv | ✅ | `.venv` Python 3.12.9 **arm64** (recreado el 2026-11-11) · `source .venv/bin/activate` |
+| Paquetes | ✅ | `ollama` 0.6.3, `langchain` 1.4.7, `langchain-ollama` 1.1.0, `langgraph` 1.2.19, `python-dotenv` 1.2.1, `rich` 14.3.2 · ver `requirements.txt` |
+| Agentes de código | ✅ | Cline (`saoudrizwan.claude-dev` 4.1.26) · Aider `aider-chat` 0.86.2 en `.venv` |
 | Disco | ✅ | Solo `~/.ollama/models` (22 GB). Los GGUF fuente y los logs ya se eliminaron |
 
 **Desviaciones importantes respecto al curso:**
@@ -86,12 +87,14 @@ agentes-locales/
 ├── README.md                    # este documento (índice y funciones)
 ├── curso-agentes-locales.md     # NÚCLEO: el curso completo (3 etapas)
 ├── NOTAS-MODULO1.md             # estado real de la Etapa 1 + desviaciones
+├── prompt_agente.py             # ENTREGABLE 1.6: agente de resumen (JSON estricto)
 ├── ollama-helper.sh             # gestor unificado de modelos (menú interactivo)
 ├── Modelfile.qwen3.5-9b         # receta de importación GGUF del 9B
 ├── Modelfile.qwen3.8-27b        # receta de importación GGUF del 27B
 ├── .aider.conf.yml              # config de Aider → Ollama
 ├── .cline/env                   # config de Cline → Ollama
 ├── .gitignore                   # exclusión de artefactos locales
+├── requirements.txt             # dependencias del curso (pip install -r ...)
 ├── scripts/
 │   ├── 01_analisis_duplicados.py        # OBSOLETO: solo informativo (por tamaño)
 │   ├── 03_auditoria_blobs_huerfanos.py  # auditor real de blobs (SHA256/manifests)
@@ -174,6 +177,16 @@ terminal arranca con:
 | `OLLAMA_NUM_PARALLEL` | `1` | una sola petición concurrente (sin KV cache extra) |
 
 Modo puntual sin reiniciar la terminal: `source scripts/entorno/ollama-env.sh`.
+
+### 6. `prompt_agente.py` — entregable del módulo 1.6
+
+Agente de un paso que resume texto y devuelve **solo JSON** (`format="json"`),
+con `think=False` (Qwen3 razonaba ~50 s por llamada) y presupuesto `num_predict`.
+
+```bash
+.venv/bin/python prompt_agente.py            # una ejecución (JSON formateado)
+.venv/bin/python prompt_agente.py --test 10  # criterio de éxito: 10/10 (≈9 s)
+```
 
 ---
 
@@ -294,7 +307,7 @@ funciona directamente, sin `arch -arm64` (arm64 nativo desde el 2026-11-11).
 | Semana | Etapa | Foco | Entregable |
 |---|---|---|---|
 | 1 | 🟢 1 | Stack + tool calling | `curl` con `tool_calls` válido (✅ hecho) |
-| 2 | 🟢 1 | Prompt Engineering | `prompt_agente.py` (JSON 10/10) |
+| 2 | 🟢 1 | Prompt Engineering | `prompt_agente.py` (JSON 10/10) ✅ |
 | 3 | 🟢 1 | Prompt avanzado (few-shot, clasificador, extractor) | 3 agentes de un paso funcionando |
 | 4 | 🟢 1 | Cline + primer agente integrado | **Entregable E1** |
 | 5 | 🟡 2 | Loops básicos | Loop con verificación y estado |

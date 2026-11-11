@@ -224,11 +224,16 @@ source .venv/bin/activate
 pip install ollama langgraph langchain langchain-ollama python-dotenv rich
 ```
 
+> **Nota (2026-11-11):** el `.venv` se **recreó en arm64**. El anterior se había creado bajo
+> Rosetta y fallaba al importar `ollama` (`pydantic_core` era un `.so` x86_64 →
+> `incompatible architecture`). Si vuelves a ver ese error, borra `.venv`, recréalo con
+> `python3 -m venv .venv` y reinstala.
+
 **Práctica 1.5**
 
-- [ ] `.venv` activado.
-- [ ] `pip list` muestra `langgraph`, `langchain-ollama` y `ollama`.
-- [ ] `python -c "import ollama, langgraph; print('OK')"` imprime `OK`.
+- [x] `.venv` activado.
+- [x] `pip list` muestra `langgraph`, `langchain-ollama` y `ollama`.
+- [x] `python -c "import ollama, langgraph; print('OK')"` imprime `OK`.
 
 ---
 
@@ -273,6 +278,11 @@ if __name__ == "__main__":
 ```
 
 **Criterio de éxito:** ejecútalo **10 veces** con el mismo texto; debe devolver JSON válido las 10. Si falla, endurece el system prompt y baja la temperatura.
+
+> **Rendimiento medido (2026-11-11):** `qwen3.5:9b` activa el *thinking* de Qwen3 y tarda
+> **~50 s** por llamada. Con `think=False` y `num_predict` acotado baja a **~1 s** y sigue
+> cumpliendo 10/10. El script de este workspace ya lo aplica:
+> `.venv/bin/python prompt_agente.py --test 10` → `Resultado: 10/10` en ~9 s.
 
 **Práctica 1.6 (varios mini-agentes de un paso)** — para cada uno: system prompt con los 5 elementos + criterio 10/10:
 

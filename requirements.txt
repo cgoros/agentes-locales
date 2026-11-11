@@ -1,0 +1,13 @@
+# Stack del curso de agentes locales (Python 3.12 · arm64)
+# Instalación:  python3 -m venv .venv && source .venv/bin/activate
+#               pip install -r requirements.txt
+
+ollama==0.6.3
+langchain==1.4.7
+langchain-ollama==1.1.0
+langgraph==1.2.19
+python-dotenv==1.2.1
+rich==14.3.2
+
+# Opcional: agente de código en terminal (módulo 1.7 / semana 14)
+# aider-chat==0.86.2

@@ -142,6 +142,12 @@ Estado final del entorno tras la migración completa:
   `~/homebrew_migracion_backup_2026-11-11/scripts-memory-cleaner/`.
 - En el repo quedan solo las utilidades vivas: `scripts/entorno/ollama-env.sh` (sourceado
   desde `~/.zshrc`) y `scripts/entorno/verificar_memoria.sh`.
+- **`.venv` recreado en arm64**: el anterior se creó bajo Rosetta y su `pydantic_core` era
+  un `.so` x86_64, así que `import ollama` fallaba con `incompatible architecture`.
+  Ahora contiene el stack del curso (`requirements.txt`) + `aider-chat` 0.86.2.
+- `pip check` muestra dos avisos de pins cruzados, ambos benignos y verificados:
+  `aider-chat` pinnea `certifi==2026.1.4` mientras `langchain-core` pide ≥2026.10.19, y
+  `httpx2` (vía `langsmith`) pide `idna>=3.18` frente a `idna==3.11` de aider.
 
 > Nota VS Code: si el terminal intenta lanzar `/usr/local/bin/bash`, cierra la pestaña
 > de terminal antigua y abre una nueva. El perfil por defecto ya apunta a `/bin/bash` y
