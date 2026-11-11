@@ -85,15 +85,30 @@ Antes de descargar nada, entiende tu máquina. Un Mac con **24 GB de RAM unifica
 | Contextos de **decenas de miles de tokens** con margen. | Contextos de 256K con un modelo de 18 GB cargado. |
 | Orquestar varios agentes **en serie** o con modelos pequeños en paralelo. | Ejecutar dos modelos de 27B simultáneamente con fluidez. |
 
-**Regla de oro:** la RAM es compartida entre pesos, KV cache y el resto del sistema. Un modelo de 18 GB en Q4 deja muy poco margen para contexto largo; para agentes con muchas herramientas, prioriza modelos de **9B–14B** o usa el 27B con prompts compactos.
+**Regla de oro:** la RAM es compartida entre pesos, KV cache y el resto del sistema. Un modelo de 18 GB en 4 bits deja muy poco margen para contexto largo; para agentes con muchas herramientas, prioriza modelos de **9B–14B** o usa el 27B con prompts compactos.
 
 **Decisión de este curso (24 GB):** todos los ejercicios de agentes y el multiagente en paralelo se hacen con **un solo `qwen3.5:9b`** cargado una vez y reutilizado por todos los roles (agente A, agente B y orquestador/sintetizador), probando **agentes en paralelo** (fan-out / fan-in). El 27B queda para pruebas puntuales de calidad, **nunca** para multiagente concurrente.
 
-**Práctica 1.1**
+**Medición real en este equipo (2026-11-11, 24 GiB):**
 
-- [ ] Anota cuánta RAM libre tienes antes de cargar un modelo (`vm.swapusage`, Activity Monitor).
-- [ ] Rellena tu propia tabla "qué cabe / qué no" para tus modelos.
-- [ ] Comprueba que `vm.swapusage` es 0 MB (sin swap) en reposo.
+| Escenario | `ollama ps` | Swap usado | Páginas libres |
+|---|---|---|---|
+| `qwen3.5:9b` cargado e inactivo | 5,1 GB · 100 % GPU · ctx 16200 | 47,5 MB | 8 601 (≈0,13 GiB) |
+| Cargando `qwen3.8:27b` (ctx 8192) | 18 GB · 100 % GPU · ctx 8192 · runner `mlx` | **4 064,6 MB (≈4,0 GiB)** | 6 639 (≈0,10 GiB) |
+| Tras `ollama stop qwen3.8:27b` | (ninguno) | 4 211,3 MB (**no baja solo**) | 1 089 383 (≈16,6 GiB) |
+
+Lo que demuestran estos números:
+
+1. **18 GB de pesos = 75 % de la RAM total** → el 27B incumple la regla del 70 % **antes** de sumar el KV cache.
+2. El swap creció de **1 GB a 5 GB de tamaño** y quedó **4 GiB en uso**: cargar el 27B con la app de escritorio abierta fuerza paginación real.
+3. **El swap no vuelve a 0 al descargar el modelo**: macOS conserva el archivo y sus páginas. Solo se limpia reiniciando (o esperando a que el sistema las reclame).
+4. Cargar el 27B costó **~9 s** de `load_duration` y la primera respuesta completa **~29 s**.
+
+**Práctica 1.1** ✅
+
+- [x] Anota cuánta RAM libre tienes antes de cargar un modelo (`vm.swapusage`, Activity Monitor).
+- [x] Rellena tu propia tabla "qué cabe / qué no" para tus modelos.
+- [x] Comprueba cuánto swap hay en reposo (`vm.swapusage`). → En reposo ya había **47,5 MB** usados (no 0), y tras la prueba del 27B el sistema quedó con **≈3,7 GiB** en uso: macOS no devuelve el swap solo.
 
 ---
 
@@ -124,17 +139,26 @@ git commit -m "..."
 > Histórico: hasta el 2026-10-31 la terminal arrancaba en x86_64 (Rosetta) y hacía falta
 > `arch -arm64 /usr/bin/git ...`. Ese apaño **ya no es necesario**.
 
-**Práctica 1.2**
+**Práctica 1.2** ✅
 
-- [ ] `curl` de `/api/tags` devuelve JSON.
-- [ ] `lms status` responde.
-- [ ] `uname -m` muestra `arm64` y `git --version` responde sin `arch -arm64`.
+- [x] `curl` de `/api/tags` devuelve JSON. → 3 modelos (`qwen3.5:9b`, `qwen3.8:27b`, `nomic-embed-text:latest`).
+- [x] `lms status` responde. → `Server: OFF` (el CLI existe en `~/.lmstudio/bin/lms`; el servidor de LM Studio **no** hace falta levantarlo en este curso).
+- [x] `uname -m` muestra `arm64` y `git --version` responde sin `arch -arm64`. → `arm64`, `git version 2.54.0 (Apple Git-157)`.
 
 ---
 
 ## 1.3. Modelos: 9B vs. 27B, GGUF vs. pull
 
-Para 24 GB, la guía de referencia (octubre de 2026) es clara: **Qwen3.8 27B** (≈18 GB en Q4) es la mejor opción "todo terreno" para calidad, con un **79,8 % en Terminal-Bench 2.1**; **Qwen3.5 9B** (≈6–7,6 GB) es el caballo de batalla para iterar rápido y bucles con mucho contexto.
+Para 24 GB, la guía de referencia (octubre de 2026) es clara: **Qwen3.8 27B** es la mejor opción "todo terreno" para calidad, con un **79,8 % en Terminal-Bench 2.1**; **Qwen3.5 9B** es el caballo de batalla para iterar rápido y bucles con mucho contexto.
+
+Medido en este equipo con `ollama list` / `ollama show` (2026-11-11):
+
+| Modelo | Tamaño en disco | Cuantización | Parámetros | ctx máx. | Capacidades |
+|---|---|---|---|---|---|
+| `qwen3.5:9b` | 5,7 GB | Q4_K_M | 9,0 B | 262 144 | tools, thinking, completion |
+| `qwen3.8:27b` | 18 GB | nvfp4 (runner **mlx**) | 27,8 B | 262 144 | tools, thinking, vision, completion |
+
+> Ojo: el 27B instalado **no** es el GGUF `UD-Q4_K_M` que describe `Modelfile.qwen3.8-27b`, sino una build **nvfp4 con runner MLX** (formato de la librería de Ollama, `requires 0.32.12`). Por eso `ollama show` no le muestra `num_ctx` y `ollama ps` lo ejecuta con `RUNNER mlx` en vez de `llamacpp`.
 
 **Vía oficial** (cuando la red lo permite):
 
@@ -143,29 +167,27 @@ ollama pull qwen3.5:9b
 ollama pull qwen3.8:27b
 ```
 
-**Vía local desde GGUF** (la que se usó en este equipo, porque el CDN de blobs de Ollama no era accesible desde esta red). Las recetas están en `Modelfile.qwen3.5-9b` y `Modelfile.qwen3.8-27b`:
+**Vía local desde GGUF** (la que sí se usó para el 9B en este equipo, porque el CDN de blobs de Ollama no era accesible desde esta red). Las recetas están en `Modelfile.qwen3.5-9b` y `Modelfile.qwen3.8-27b`:
 
 ```bash
 ollama create qwen3.5:9b  -f Modelfile.qwen3.5-9b
 ollama create qwen3.8:27b -f Modelfile.qwen3.8-27b
 ```
 
-> **Ya hecho en este equipo:** ambos modelos están importados en `~/.ollama/models` y los
-> `.gguf` fuente se borraron (21 GB liberados). Los `Modelfile.*` hacen `FROM ./gguf/...`,
-> así que solo sirven si vuelves a descargar los GGUF en `gguf/`.
+> **Estado real de los modelos instalados:** `qwen3.5:9b` sí procede de `Qwen3.5-9B-Q4_K_M.gguf` (formato `gguf`); `qwen3.8:27b` es hoy una build **`safetensors` + nvfp4** de la librería de Ollama, **no** el GGUF `UD-Q4_K_M` de su `Modelfile`. Los `.gguf` fuente se borraron (21 GB liberados), así que `ollama create ... -f Modelfile.*` solo sirve si vuelves a descargar los GGUF en `gguf/`.
 
 **Alternativas útiles** (no las descargues todas):
 
 - **`gpt-oss:20b`** (≈14 GB): buen *function calling* nativo, Apache 2.0.
 - **`qwen3.6:35b`** (MoE, ≈23–24 GB): rápido por tokens activos, pero roza el límite de tu RAM; solo para experimentos puntuales.
 
-**Contexto y RAM:** el 27B se creó con `num_ctx 16384` (no 32K) para no arriesgar swap. El 9B puede usar 16384–32768 con margen.
+**Contexto y RAM (real):** el `Modelfile.qwen3.5-9b` fija `num_ctx 8192`, pero el 9B cargado reporta `ctx 16200` (≈16K): algún cliente (Cline/Aider) pide más contexto al cargarlo. El 27B instalado no lleva `num_ctx` fijado, así que **el contexto se decide al cargar** (`./ollama-helper.sh` usa 8192). Regla práctica: cada 1K tokens de contexto extra con el 27B cuesta RAM de verdad y acerca el swap.
 
-**Práctica 1.3**
+**Práctica 1.3** ✅
 
-- [ ] `ollama list` muestra `qwen3.5:9b` y `qwen3.8:27b` con la etiqueta `tools`.
-- [ ] Usa `./ollama-helper.sh` (opción 2) para ver RAM/swap antes y después de cargar el 27B.
-- [ ] `ollama ps` confirma qué modelo está en memoria.
+- [x] `ollama show qwen3.5:9b` y `ollama show qwen3.8:27b` muestran la capacidad `tools` (ojo: `ollama list` **no** lista capacidades, solo nombre/tamaño/fecha).
+- [x] RAM/swap antes y después de cargar el 27B → `swap used` 47,5 MB → **4 064,6 MB** (tabla de medición real en 1.1).
+- [x] `ollama ps` confirma qué modelo está en memoria → `qwen3.8:27b`, 18 GB, 100 % GPU, ctx 8192, `RUNNER mlx`.
 
 ---
 
@@ -202,11 +224,33 @@ curl -s http://localhost:11434/api/chat -d '{
 3. Devuelves el resultado al modelo como mensaje `role: tool`.
 4. El modelo genera la respuesta final.
 
-**Práctica 1.4**
+**Práctica 1.4** ✅
 
-- [ ] El `curl` devuelve un `tool_calls` válido (no texto plano).
-- [ ] Repite el test con `qwen3.8:27b`.
-- [ ] Define una **segunda** tool (ej. `get_time(city)` o `convert_currency`) y pide algo que requiera las dos.
+- [x] El `curl` devuelve un `tool_calls` válido (no texto plano) → `get_weather{"city":"Madrid"}`, `arguments` como **objeto** y `content` vacío.
+- [x] Repite el test con `qwen3.8:27b` → mismo formato de `tool_calls`, pero **32,95 s** frente a 3,05 s del 9B.
+- [x] Define una **segunda** tool (ej. `get_time(city)` o `convert_currency`) y pide algo que requiera las dos → con `get_weather` + `get_weather_forecast` + `get_time` y la pregunta *"¿Qué tiempo hace en Madrid y qué hora es allí?"*, el modelo devuelve **dos `tool_calls` en el mismo mensaje** (`index` 0 y 1) y resuelve *"allí"* → `city: "Madrid"` por correferencia.
+
+Medición real en este equipo (24 GiB, 2026-11-11). Recuerda: las duraciones de Ollama vienen en **nanosegundos** → divide entre `1e9`:
+
+| Medición | `qwen3.5:9b` (1 tool) | `qwen3.8:27b` (1 tool) | `qwen3.5:9b` (3 tools, 2.ª llamada) |
+|---|---|---|---|
+| `total_duration` | 3,05 s | **32,95 s** | 1,27 s |
+| `load_duration` | 1,06 s | **10,81 s** | 0,001 s (modelo caliente) |
+| `prompt_eval_count` | 275 | 277 | 402 |
+| `prompt_eval_cached_count` | 0 | 0 | **378 (94 %)** |
+| `prompt_eval_duration` | 0,44 s ≈ **619 tok/s** | 20,77 s ≈ **13 tok/s** | 0,19 s |
+| `eval_count` / `eval_duration` | 72 / 1,54 s ≈ 47 tok/s | 25 / 1,30 s ≈ **19 tok/s** | 52 / 1,08 s ≈ 48 tok/s |
+
+Conclusiones medidas:
+
+- **El prefill domina, no la generación.** Con el 27B, 20,8 s de 32,95 s (63 %) se fueron en *leer* el prompt, y solo 1,3 s en escribir. Y en el 9B el prefill va a 619 tok/s frente a 13 tok/s del 27B: **46× más lento** en la fase que un agente repite en cada paso. Con 3,3 GB de swap usados, ese prefill estaba paginando a disco.
+- **Cada tool cuesta prompt en cada llamada:** 275 → 397 tokens solo por añadir dos herramientas (≈61 por tool). 20 tools ≈ 1 200 tokens fijos por paso.
+- **KV cache:** con el mismo `system` + `tools`, Ollama reutiliza 378 de 402 tokens (`prompt_eval_cached_count`) y el total baja de 2,32 s a 1,27 s. Por eso el prompt estable va al principio y lo nuevo al final.
+- **`arguments` es un objeto** (no string) tanto en 9B como en 27B, con Ollama 0.40.
+
+> **Dos lecciones que valen más que el test:**
+> 1. `tool_calls` es un **array**: si tu código ejecuta solo `tool_calls[0]`, la segunda herramienta nunca se ejecuta y el modelo responde a medias.
+> 2. La `description` **no documenta, compite**: `get_weather` y `get_weather_forecast` con textos casi iguales son un bug esperando a pasar. Cada descripción debe decir cuándo SÍ y cuándo NO usar esa tool.
 
 ---
 

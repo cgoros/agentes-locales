@@ -1,6 +1,6 @@
 # Estado del Módulo 1 — Stack local
 
-Última verificación: 2026-10-31.
+Última verificación: 2026-11-11.
 
 ## Qué hay instalado
 
@@ -10,8 +10,8 @@
 | Python | ✅ | 3.12.9 (`/Library/Frameworks/Python.framework/Versions/3.12`) |
 | Git | ✅ | 2.54.0 (Apple Git-157) · nativo arm64, sin `arch -arm64` |
 | Ollama | ✅ | 0.40.13 · **Ollama.app** (no Homebrew), sirviendo en `127.0.0.1:11434` |
-| LM Studio | ✅ | app 0.4.28 · CLI `lms` en `~/.lmstudio/bin` · servidor ON en `:1234` |
-| Modelos | ✅ | `qwen3.5:9b` (5,7 GB) y `qwen3.8:27b` (16 GB) importados desde GGUF + `nomic-embed-text` |
+| LM Studio | ✅ | app 0.4.28 · CLI `lms` en `~/.lmstudio/bin` · servidor **OFF** en `:1234` (arráncalo con `lms server start` si lo necesitas) |
+| Modelos | ✅ | `qwen3.5:9b` (5,7 GB, GGUF Q4_K_M) · `qwen3.8:27b` (18 GB, **safetensors nvfp4 / runner MLX**) · `nomic-embed-text` (274 MB) |
 | venv | ✅ | `.venv` (Python 3.12.9) en la raíz del proyecto |
 | Paquetes | ✅ | `ollama` 0.6.3, `langchain` 1.4.7, `langchain-ollama` 1.1.0, `langgraph` 1.2.19, `python-dotenv`, `rich` |
 | Cline | ✅ | `saoudrizwan.claude-dev` 4.1.26 (proveedor configurado en la UI) |
@@ -23,14 +23,21 @@
    No ejecutes `brew install ollama` / `brew services start ollama` mientras la app esté activa: dos servidores peleando por el mismo puerto.
 2. **El venv vive en la raíz del proyecto**, no en `~/agentes-locales`. Activar con:
    `cd agentes-locales && source .venv/bin/activate`.
-3. **Los modelos se importaron desde GGUF de HuggingFace**, no con `ollama pull`.
+3. **Los modelos se importaron desde GGUF de HuggingFace**, no con `ollama pull` (el 9B sigue así; el 27B actual ya es `safetensors`/nvfp4 → ver punto 6).
    Motivo: el CDN de blobs de Ollama (`*.r2.cloudflarestorage.com`) no es accesible desde esta red
    (`dial tcp 172.64.66.1:443: i/o timeout`), mientras que `huggingface.co` descarga a ~30 MB/s.
    Cuando la red lo permita, `ollama pull qwen3.5:9b` / `ollama pull qwen3.8:27b` sustituirán los modelos locales por los builds oficiales.
    Las recetas de importación quedan guardadas en `Modelfile.qwen3.5-9b` y `Modelfile.qwen3.8-27b`.
 4. El test de tool calling del curso espera `arguments` como **string JSON**; Ollama 0.40 devuelve un **objeto**. Ambos son válidos para el cliente Python y para LangChain.
 5. El 27B se creó con `num_ctx 16384` (no 32K) para no arriesgar swap con 24 GB de RAM.
-   Cargó en ~6 s sin swap (`vm.swapusage` = 0) y respondió el tool call en ~10 s.
+   Histórico (2026-10-31): cargó en ~6 s sin swap (`vm.swapusage` = 0) y respondió el tool call en ~10 s.
+6. **El `qwen3.8:27b` instalado hoy NO es el GGUF del `Modelfile`.** `curl /api/tags` devuelve
+   `format: safetensors` + `quantization: nvfp4`, y `ollama ps` lo ejecuta con `RUNNER mlx`
+   (`ollama show` no le muestra `num_ctx`). El 9B sí sigue siendo el GGUF `Qwen3.5-9B-Q4_K_M.gguf`.
+7. **Medición de RAM del 2026-11-11 (24 GiB):** con el 9B cargado el swap usado era 47,5 MB;
+   al cargar el 27B (18 GB, ctx 8192) el swap subió a **4 064,6 MB (≈4 GiB)** y el archivo de swap
+   pasó de 1 GB a 5 GB. Tras `ollama stop qwen3.8:27b` el swap **no vuelve a 0** (quedó en ~3,7 GiB).
+   → El 27B ocupa el **75 % de la RAM solo en pesos**: incumple la regla del 70 % incluso sin KV cache.
 
 ## Git (resuelto: arm64 nativo)
 
@@ -79,9 +86,10 @@ volver a descargar los GGUF de HuggingFace y usar `Modelfile.qwen3.5-9b` / `Mode
 |---|---|
 | `curl /api/tags` (:11434) | ✅ responde |
 | Tool calling `qwen3.5:9b` | ✅ `tool_calls → get_weather{"city":"Madrid"}` |
-| Tool calling `qwen3.8:27b` | ✅ `tool_calls → get_weather{"city":"Madrid"}` (load 6 s, sin swap) |
+| Tool calling `qwen3.8:27b` | ✅ `tool_calls → get_weather{"city":"Madrid"}` (2026-10-31: load 6 s, sin swap) |
 | `ChatOllama` + `LangGraph` | ✅ nodo único START→END devuelve texto |
-| LM Studio API (:1234) | ✅ `/v1/models` responde (solo embeddings cargados) |
+| LM Studio API (:1234) | ⚠️ servidor **OFF** hoy (`lms status`); se enciende con `lms server start` |
+| RAM/swap cargando el 27B (2026-11-11) | ⚠️ swap 47,5 MB → **4 064,6 MB**; 18 GB = 75 % de la RAM → no cabe con holgura |
 
 ## Pendiente en la UI de VS Code (1.7)
 
@@ -170,4 +178,37 @@ el workspace (funciona con cualquier modelo: DeepSeek-v4, qwen local, etc.).
   ya esté montado, para detectar cualquier cosa que se hubiera escapado.
 - **Guía completa para el alumno:** sección *"Cómo estudiar con el profesor
   (Cline)"* del `README.md`.
+
+
+---
+
+## Punto de retorno (2026-11-11, fin de sesión)
+
+**Hecho:** prácticas 1.1, 1.2, 1.3 y 1.4 marcadas ✅ en `curso-agentes-locales.md`,
+todas con mediciones reales de este equipo (no copiadas de la guía).
+
+**Siguiente parada: 1.5 — Entorno Python.** El `.venv` ya existe en arm64; solo hay
+que validarlo y pasar a cerrar el bucle de 4 pasos en Python:
+
+```bash
+cd ~/Documents/wks/pruebas/agentes-locales
+source .venv/bin/activate
+pip list | grep -Ei 'langgraph|langchain-ollama|^ollama'
+python -c "import ollama, langgraph; print('OK')"
+ollama ps            # debe estar vacío: el 27B se descarga solo tras 5 min
+git log --oneline -1
+```
+
+**Decisión de diseño pendiente** (para el primer `get_time` en Python):
+
+- `get_time(city)` → cómodo para el usuario, pero tu código necesita un mapa
+  ciudad → zona (`"Madrid" → "Europe/Madrid"`).
+- `get_time(timezone)` → el modelo entrega la zona IANA directamente; cero mapa,
+  pero el usuario tiene que "hablar en zonas".
+
+**Recordatorio técnico:** ejecutar **todos** los `tool_calls` del array, no solo
+`tool_calls[0]`; y devolver cada resultado con `role: "tool"`.
+
+**Ficheros de prueba de la sesión** (en `/tmp`, fuera del repo, se borran al reiniciar):
+`/tmp/tool_27b.json` y `/tmp/tool_dos.json`. Si desaparecen, se regeneran en 1 minuto.
 

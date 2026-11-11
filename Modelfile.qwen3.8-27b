@@ -1,6 +1,7 @@
 FROM ./gguf/Qwen3.8-27B-UD-Q4_K_M.gguf
 
-# 16K de contexto: el 27B Q4 ocupa ~16,5 GB de los 24 GB unificados.
+# 16K de contexto: el 27B en 4 bits ocupa ~18 GB de los 24 GB unificados (75 % de la RAM).
+# Medido el 2026-11-11: al cargarlo con 24 GB el swap sube a ~4 GiB. Baja num_ctx para aliviarlo.
 # Sube a 32768 solo si ves que no hay swap (monitoriza con Activity Monitor).
 PARAMETER num_ctx 16384
 
