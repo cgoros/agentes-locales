@@ -337,7 +337,22 @@ if __name__ == "__main__":
 - [ ] **Extractor de entidades:** devuelve `{"personas": [], "lugares": [], "fechas": []}`.
 - [ ] **Corrector con restricciones:** corrige gramática **sin cambiar** el significado; devuelve `{"texto": "...", "cambios": [...]}`.
 - [ ] **Generador YAML:** convierte un texto en YAML válido y bien indentado.
-- [ ] **Compara temperaturas:** ejecuta el clasificador con `temperature` 0.1 vs 0.9 y explica las diferencias.
+- [x] **Compara temperaturas:** ejecuta el clasificador con `temperature` 0.1 vs 0.9 y explica las diferencias.
+  → `temperaturas.py` (6 casos × 3 tiradas × 2 temperaturas = 36 llamadas, ~34 s). Dos pasadas:
+
+  | `temperature` | etiquetas inestables | comentarios distintos (de 18) | fallos de validación |
+  |---|---|---|---|
+  | 0.1 | 0/6 | 10 y 13 | 0 |
+  | 0.9 | 3/6 y 1/6 | 18 y 18 | 0 |
+
+  **Conclusiones:** (1) `format="json"` + enums cerrados blindan **la forma**: 0 fallos a las dos
+  temperaturas; (2) **el criterio no lo blinda nada**: a 0.9 el mismo ticket pasa de
+  `software/media/ok` a `cuenta de usuario/alta/ok` y a `otro/nula/no_ticket` (*"esto no es una
+  incidencia"* sobre una incidencia); (3) las **etiquetas** tiemblan, la **prosa** siempre varía
+  (ya 10-13 comentarios distintos a 0.1) → no exijas texto idéntico, valida tipo y longitud;
+  (4) regla de producción: clasificar/extraer → `0.1`; redactar/idear → `0.6-0.9`.
+  (5) **Método:** el mismo experimento dio 3/6 y 1/6 en dos pasadas → 3 tiradas sirven para ver la
+  *dirección*, no para cuantificar (n≥10 para números serios).
 
 **[Diseño del clasificador]** — decisiones tomadas midiendo, no opinando:
 

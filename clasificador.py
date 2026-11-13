@@ -51,7 +51,7 @@ ESTADOS = {"ok", "insuficiente", "no_ticket"}
 CLAVES_OK = {"categoria", "urgencia", "estado", "comentario"}
 
 
-def resumir(texto: str) -> dict:
+def resumir(texto: str, temperature: float = 0.1) -> dict:
     resp = ollama.chat(
         model=MODELO,
         messages=[
@@ -61,7 +61,7 @@ def resumir(texto: str) -> dict:
         format="json",  # fuerza JSON válido
         think=False,  # Qwen3: sin razonamiento interno (mucho más rápido)
         options={
-            "temperature": 0.1,
+            "temperature": temperature,
             "num_predict": 300,  # presupuesto: corta la generación
         },
     )

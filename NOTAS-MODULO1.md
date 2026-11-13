@@ -210,8 +210,13 @@ which python                   # .../agentes-locales/.venv/bin/python
 .venv/bin/python bateria.py
 ```
 
-**Siguiente parada:** los 4 mini-agentes restantes de 1.6 — (1) **temperaturas 0.1 vs 0.9**,
-(2) extractor de entidades, (3) corrector con restricciones, (4) generador YAML.
+**Siguiente parada:** mini-agente **extractor de entidades** en 1.6 (el primero con **listas**
+dentro del JSON); después, corrector con restricciones y generador YAML.
+
+**Hecho también en esta sesión:** mini-agente **temperaturas** cerrado con `temperaturas.py`
+(0.1 → 0/6 etiquetas inestables; 0.9 → 1-3/6, con el mismo ticket clasificado como
+`otro/nula/no_ticket`). Regla de producción aprendida: clasificar/extraer a `0.1`,
+redactar/idear a `0.6-0.9`.
 
 **Decisión de diseño pendiente** (para el primer `get_time` en Python):
 
