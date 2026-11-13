@@ -182,22 +182,36 @@ el workspace (funciona con cualquier modelo: DeepSeek-v4, qwen local, etc.).
 
 ---
 
-## Punto de retorno (2026-11-11, fin de sesión)
+## Punto de retorno (2026-11-12)
 
-**Hecho:** prácticas 1.1, 1.2, 1.3 y 1.4 marcadas ✅ en `curso-agentes-locales.md`,
-todas con mediciones reales de este equipo (no copiadas de la guía).
+**Hecho:** prácticas **1.1–1.5** ✅ y el **clasificador de 1.6** (1 de 5 mini-agentes):
+`clasificador.py` (contrato de 4 claves + `validar()` determinista) y `bateria.py`
+(6 casos difíciles con respuesta esperada). Medido en este equipo: `--test 10` → **10/10**;
+batería → **6/6 coherentes**; `"no va."` estable **3/3** en `estado`.
 
-**Siguiente parada: 1.5 — Entorno Python.** El `.venv` ya existe en arm64; solo hay
-que validarlo y pasar a cerrar el bucle de 4 pasos en Python:
+**Aprendizajes de la sesión** (los que costaron):
+
+- `--test 10` mide la **forma**, no el **contenido**: un JSON puede ser válido y falso.
+  Hace falta un banco de casos con respuesta esperada (= antesala de 2.2).
+- Los criterios de urgencia estaban en un **dict de Python** → el modelo no los veía.
+  Una regla que el modelo no lee no existe: van en el `SYSTEM`.
+- `otro`/`nula` mezclaba *"no es un ticket"* con *"faltan datos"* → se añadió `estado`
+  (enum de 3: `ok` / `insuficiente` / `no_ticket`).
+- Coherencia en código: `not(A and B) = not A or not B` (De Morgan). Con `or` en vez de
+  `and`, el validador rechaza **todos** los tickets buenos (falsos positivos).
+- **Antes de ejecutar**, `which python`: hay un venv x86_64 de otro proyecto
+  (`~/Documents/tests/deepseek_api_test/venv`) que revienta al importar `ollama`.
 
 ```bash
 cd ~/Documents/wks/pruebas/agentes-locales
-source .venv/bin/activate
-pip list | grep -Ei 'langgraph|langchain-ollama|^ollama'
-python -c "import ollama, langgraph; print('OK')"
-ollama ps            # debe estar vacío: el 27B se descarga solo tras 5 min
-git log --oneline -1
+source .venv/bin/activate      # prompt (.venv) — el intruso es (venv)
+which python                   # .../agentes-locales/.venv/bin/python
+.venv/bin/python clasificador.py --test 10
+.venv/bin/python bateria.py
 ```
+
+**Siguiente parada:** los 4 mini-agentes restantes de 1.6 — (1) **temperaturas 0.1 vs 0.9**,
+(2) extractor de entidades, (3) corrector con restricciones, (4) generador YAML.
 
 **Decisión de diseño pendiente** (para el primer `get_time` en Python):
 

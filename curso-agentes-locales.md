@@ -273,11 +273,13 @@ pip install ollama langgraph langchain langchain-ollama python-dotenv rich
 > `incompatible architecture`). Si vuelves a ver ese error, borra `.venv`, recréalo con
 > `python3 -m venv .venv` y reinstala.
 
-**Práctica 1.5**
+**Práctica 1.5** ✅
 
-- [ ] `.venv` activado.
-- [ ] `pip list` muestra `langgraph`, `langchain-ollama` y `ollama`.
-- [ ] `python -c "import ollama, langgraph; print('OK')"` imprime `OK`.
+- [x] `.venv` activado → prompt `(.venv)` y `which python` = `…/agentes-locales/.venv/bin/python`, **Python 3.12.9 arm64**.
+- [x] `pip list` muestra `langgraph`, `langchain-ollama` y `ollama` → `ollama 0.6.3`, `langchain-ollama 1.1.0`, `langchain-core 1.8.0`, `langgraph 1.2.19` (+ `langgraph-checkpoint 4.3.1`, `langgraph-prebuilt 1.1.1`).
+- [x] `python -c "import ollama, langgraph; print('OK')"` imprime `OK`.
+
+> **Trampa a recordar:** si vuelve el error `incompatible architecture (have 'arm64', need 'x86_64')` al importar `ollama`, el `.venv` se creó bajo Rosetta → bórralo, recréalo con `python3 -m venv .venv` y reinstala. Ya pasó una vez (ver nota de arriba).
 
 ---
 
@@ -330,11 +332,25 @@ if __name__ == "__main__":
 
 **Práctica 1.6 (varios mini-agentes de un paso)** — para cada uno: system prompt con los 5 elementos + criterio 10/10:
 
-- [ ] **Clasificador:** devuelve `{"categoria": "...", "confianza": 0-1}` para tickets de soporte.
+- [x] **Clasificador:** devuelve `{"categoria": "...", "confianza": 0-1}` para tickets de soporte.
+  → hecho en `clasificador.py` con **contrato ampliado a 4 claves** (`categoria`, `urgencia`, `estado`, `comentario`) en lugar de `confianza` 0-1: un LLM no calibra ese número y no hay forma de validarlo. `--test 10` → **10/10** (~1 s/llamada con `think=False`); `bateria.py` (6 casos difíciles) → **6/6 coherentes**. Ver nota **[Diseño del clasificador]**.
 - [ ] **Extractor de entidades:** devuelve `{"personas": [], "lugares": [], "fechas": []}`.
 - [ ] **Corrector con restricciones:** corrige gramática **sin cambiar** el significado; devuelve `{"texto": "...", "cambios": [...]}`.
 - [ ] **Generador YAML:** convierte un texto en YAML válido y bien indentado.
 - [ ] **Compara temperaturas:** ejecuta el clasificador con `temperature` 0.1 vs 0.9 y explica las diferencias.
+
+**[Diseño del clasificador]** — decisiones tomadas midiendo, no opinando:
+
+| Decisión | Por qué |
+|---|---|
+| `urgencia` en vez de `confianza` 0-1 | Un 0.87 de un LLM no está calibrado y no se puede validar; un enum cerrado sí. |
+| `categoria` como **lista cerrada** | Permite `validar()` determinista (`dato["categoria"] in CATEGORIA`). |
+| `estado` ∈ {`ok`, `insuficiente`, `no_ticket`} | Resuelve una colisión: "no es un ticket" (la luna de queso) vs. "es un ticket sin datos" ("no va."). Un booleano `suficiente` no distinguía ambas. |
+| **Criterios de urgencia dentro del SYSTEM** | Se escribieron primero como dict en Python y el modelo nunca los veía → `alta`/`media` oscilaban. Una regla que el modelo no lee no existe. |
+| Regla de coherencia **en código** | `estado != "ok" → categoria="otro" y urgencia="nula"`; el prompt la pide y `validar()` la exige. Ojo: `and` fuera / `or` dentro (ley de De Morgan); con `or` el validador rechazaría todos los tickets buenos. |
+| **Batería de casos** con respuesta esperada | `--test 10` prueba la *forma*; `bateria.py` prueba el *contenido*. Un JSON puede ser válido y falso (p. ej. `ok + otro + nula` pasa el validador y es un error de clasificación). |
+
+Tres fallos que solo aparecieron al pasar tickets distintos: falta de bandeja `facturacion`, urgencia sin criterios (`alta` para "no me llegan los correos") y la colisión `otro/nula`. Los tres, corregidos y re-medidos.
 
 ---
 
