@@ -210,13 +210,33 @@ which python                   # .../agentes-locales/.venv/bin/python
 .venv/bin/python bateria.py
 ```
 
-**Siguiente parada:** mini-agente **extractor de entidades** en 1.6 (el primero con **listas**
-dentro del JSON); después, corrector con restricciones y generador YAML.
-
 **Hecho también en esta sesión:** mini-agente **temperaturas** cerrado con `temperaturas.py`
 (0.1 → 0/6 etiquetas inestables; 0.9 → 1-3/6, con el mismo ticket clasificado como
 `otro/nula/no_ticket`). Regla de producción aprendida: clasificar/extraer a `0.1`,
 redactar/idear a `0.6-0.9`.
+
+**Cerrados además:** **extractor de entidades** (`extractor.py`: listas sin duplicados, fechas
+normalizadas con regex, `--test 10` → **10/10** en 4 textos trampa) y **corrector con
+restricciones** (`corrector.py`: 6 comprobaciones deterministas, la 6.ª con Levenshtein ≤ 2).
+
+Lo que enseñó el corrector (y que un `--test 10` en verde no te dice):
+
+- **10/10 verde con salida falsa:** `aller`→`yendo` (significado cambiado) y `Mellamo Carlos`
+  (espacio comido) pasaban todas las comprobaciones anteriores: números, longitud ±20 %,
+  coherencia y nombres propios.
+- **Prompt e invariante pueden contradecirse:** `en el Mercado` es *ortografía* para el prompt y
+  *nombre propio perdido* para el invariante → se resolvió en modo flexible (la palabra sobrevive,
+  la caja puede cambiar). Un invariante solo verifica la regla **tal como está escrita**.
+- **`cambios` es un relato, no un registro de auditoría:** reportó un cambio falso (`'el'`→`'el'`)
+  y ocultó una coma borrada. La auditoría de verdad se calcula con `difflib`.
+- **Si el prompt no obedece, baja la garantía a código:** la regla de ambigüedad en el SYSTEM no
+  evitó `aller`→`yendo`; el invariante de distancia de edición lo cazó en **10/10** tiradas.
+  Medición: con `aller` → **0/10**; sin `aller` → **5/5**.
+- Trampa de depuración: dos literales pegados en Python se concatenan sin espacio
+  (`"...Valencia." "el próximo..."` → `Valencia.el`). Antes de acusar al modelo, `print(repr(MUESTRA))`.
+
+**Siguiente parada:** mini-agente **generador YAML** (último de 1.6): sin `format="json"`, el
+validador tiene que ser un *parser* de verdad.
 
 **Decisión de diseño pendiente** (para el primer `get_time` en Python):
 
@@ -230,4 +250,41 @@ redactar/idear a `0.6-0.9`.
 
 **Ficheros de prueba de la sesión** (en `/tmp`, fuera del repo, se borran al reiniciar):
 `/tmp/tool_27b.json` y `/tmp/tool_dos.json`. Si desaparecen, se regeneran en 1 minuto.
+
+---
+
+## Punto de retorno — fin de sesión 2026-11-12 (noche)
+
+**Estado de 1.6: 4 de 5 mini-agentes cerrados.**
+
+| Mini-agente | Archivo | Medición |
+|---|---|---|
+| Clasificador | `clasificador.py` + `bateria.py` | `--test 10` → 10/10 · batería 6/6 |
+| Temperaturas | `temperaturas.py` | 0.1 → 0/6 inestables · 0.9 → 1-3/6 |
+| Extractor | `extractor.py` | `--test 10` → 10/10 (4 textos trampa) |
+| Corrector | `corrector.py` | **0/10 con `aller`** (a propósito: lo caza el inv 6) · 5/5 sin `aller` |
+| Generador YAML | — | **pendiente, siguiente** |
+
+**Mañana, primer comando** (sirve de termómetro: 0/10 es *correcto*, el modelo reescribe):
+
+```bash
+cd ~/Documents/wks/pruebas/agentes-locales
+.venv/bin/python corrector.py --test 10
+```
+
+**Plan de mañana:** generador YAML (último de 1.6). Sin `format="json"`, o sea que el validador
+tiene que ser un *parser*: `yaml.safe_load` + comprobación estructural; decidir entre **limpiar**
+la salida (aceptar ``` ```yaml ``` ``` y comentarios) o **rechazar y reintentar** — recomendado
+rechazar, porque limpiar es adivinar. Criterio de éxito distinto al resto: aquí el "10/10" no
+basta, hay que comparar el YAML parseado con un `dict` esperado.
+
+**Nits pendientes** (cuando apetezca, no bloquean):
+
+- `extractor.py`: comprobación de fidelidad literal para `personas`/`lugares` (3 líneas,
+  `all(v in texto for v in lista)`); `fechas` queda fuera porque se normaliza a propósito.
+- Consolidar los `CASOS` en un `casos.py` común cuando un tercer script los necesite
+  (ahora están duplicados entre `bateria.py` y `temperaturas.py`).
+- Cerrar el venv intruso del prompt (`(venv)` de `deepseek_api_test`): `.venv/bin/python` explícito
+  siempre, o `deactivate` una vez.
+
 

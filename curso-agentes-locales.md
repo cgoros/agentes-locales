@@ -345,7 +345,14 @@ if __name__ == "__main__":
   dice `Bogota` y el modelo devuelve `Bogotá`, el JSON es válido y la corrección silenciosa pasa. Eso se
   verifica aparte y **solo en campos literales**: `all(v in texto for v in lista)` (no vale para `fechas`,
   que se normalizan a propósito). Moraleja: **diseña el contrato para que sea verificable**.
-- [ ] **Corrector con restricciones:** corrige gramática **sin cambiar** el significado; devuelve `{"texto": "...", "cambios": [...]}`.
+- [x] **Corrector con restricciones:** corrige gramática **sin cambiar** el significado; devuelve `{"texto": "...", "cambios": [...]}`.
+  → `corrector.py`. Contrato de 2 claves y **6 comprobaciones deterministas**: (1) números preservados,
+  (2) longitud ±20 %, (3) coherencia `texto`↔`cambios`, (4) idempotencia (2.ª pasada sin cambios; 1 llamada
+  extra, fuera del bucle), (5) nombres propios conservados y (6) **corrige pero no reescribe** — cada palabra
+  nueva debe estar a distancia de Levenshtein ≤ 2 de alguna palabra del original. Medición con una `MUESTRA`
+  de 4 frases que incluye `aller` (`--test 10`): **0/10**, y las 10 tiradas las caza la comprobación 6
+  (`aller`→`yendo`, distancia 3). Quitando `aller` del texto: **5/5** con 4 cambios reales; en una tirada
+  suelta, JSON correcto + idempotencia OK y salida 0. Ver nota **[Invariantes del corrector]**.
 - [ ] **Generador YAML:** convierte un texto en YAML válido y bien indentado.
 - [x] **Compara temperaturas:** ejecuta el clasificador con `temperature` 0.1 vs 0.9 y explica las diferencias.
   → `temperaturas.py` (6 casos × 3 tiradas × 2 temperaturas = 36 llamadas, ~34 s). Dos pasadas:
@@ -376,6 +383,21 @@ if __name__ == "__main__":
 | **Batería de casos** con respuesta esperada | `--test 10` prueba la *forma*; `bateria.py` prueba el *contenido*. Un JSON puede ser válido y falso (p. ej. `ok + otro + nula` pasa el validador y es un error de clasificación). |
 
 Tres fallos que solo aparecieron al pasar tickets distintos: falta de bandeja `facturacion`, urgencia sin criterios (`alta` para "no me llegan los correos") y la colisión `otro/nula`. Los tres, corregidos y re-medidos.
+
+**[Invariantes del corrector]** — lo que un `--test 10` en verde **no** te está diciendo:
+
+| Hallazgo | Dato |
+|---|---|
+| **10/10 puede ser verde y falso** | El modelo devolvía `Había mucha gente yendo al mercado` (`aller`→`yendo`: significado cambiado) y, en otra tirada, `Mellamo Carlos` (espacio comido). Las 5 comprobaciones iniciales lo aprobaban: números intactos, longitud −1 carácter (dentro del ±20 %), coherencia y nombres propios correctos. |
+| **El prompt y el invariante pueden contradecirse** | Con `en el Mercado` (mayúscula en palabra común) el modelo corrige —es ortografía y el prompt se lo pide— mientras el invariante 5 lo llamaba «nombre propio desaparecido». Se resolvió en modo **flexible**: la palabra debe sobrevivir, la caja puede cambiar. Un invariante debe verificar **la regla tal como está escrita**; si la regla es semántica («no toques nombres propios»), no es verificable de forma determinista. |
+| **`cambios` es un relato, no un registro de auditoría** | En una prueba reportó 4 cambios, uno falso (`'el'` a `'el'`), y **ocultó** la eliminación de una coma. La auditoría real se calcula con `difflib.SequenceMatcher`; el modelo no es un log. |
+| **La regla de ambigüedad no mordió** | Añadida al SYSTEM («si una palabra no existe y caben varias correcciones, no la corrijas»), `aller`→`yendo` siguió pasando en 10/10. Una instrucción que el modelo no obedece no es una regla: la garantía se baja a código (comprobación 6). |
+
+Moraleja: **si el prompt no obedece, baja la garantía a código.** Jerarquía de defensas:
+`format="json"` + enums cerrados (forma) → invariantes deterministas (cifras, nombres, reescritura) →
+auditoría con `difflib` (revisión) → humano o juez (significado, etapa 2.2).
+El umbral Levenshtein ≤ 2 acepta `Abía`→`Había`, `jente`→`gente`, `aller`→`ayer`, `en el`→`al` y caza
+`aller`→`yendo`; a cambio, acepta correcciones legítimas lejanas y **no ve el significado** (hueco declarado).
 
 ---
 

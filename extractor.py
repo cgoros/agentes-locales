@@ -21,11 +21,11 @@ Reglas:
 - Máximo 10 elementos por lista, sin repetidos.
 No añadas explicaciones, markdown ni texto fuera del JSON."""
 
-# MUESTRA = ("El 15 de marzo de 2024, Marta Ruiz se reunió en Berlín con Karl Weber y Ana López. ". "La próxima semana volverá a Valencia.")
+MUESTRA = ("El 15 de marzo de 2024, Marta Ruiz se reunió en Berlín con Karl Weber y Ana López. " "La próxima semana volverá a Valencia.")
 # MUESTRA = ("cuando el rio suena, agua lleva.")
 # MUESTRA = ("el martes pasado me llamó Lucía")
 # MUESTRA = ("Juan llamó; después Juan escribió")
-MUESTRA = ("Ayer estuve en el mercado central de Bogotá")
+# MUESTRA = ("Ayer estuve en el mercado central de Bogotá")
 
 CLAVES = {"personas", "lugares", "fechas"}
 RE_FECHA = re.compile(r"^\d{4}-\d{2}(-\d{2})?$")
