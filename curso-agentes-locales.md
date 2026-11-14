@@ -334,7 +334,17 @@ if __name__ == "__main__":
 
 - [x] **Clasificador:** devuelve `{"categoria": "...", "confianza": 0-1}` para tickets de soporte.
   → hecho en `clasificador.py` con **contrato ampliado a 4 claves** (`categoria`, `urgencia`, `estado`, `comentario`) en lugar de `confianza` 0-1: un LLM no calibra ese número y no hay forma de validarlo. `--test 10` → **10/10** (~1 s/llamada con `think=False`); `bateria.py` (6 casos difíciles) → **6/6 coherentes**. Ver nota **[Diseño del clasificador]**.
-- [ ] **Extractor de entidades:** devuelve `{"personas": [], "lugares": [], "fechas": []}`.
+- [x] **Extractor de entidades:** devuelve `{"personas": [], "lugares": [], "fechas": []}`.
+  → `extractor.py`, mismo esqueleto que el clasificador (`SYSTEM` + `extraer()` + `validar()` + `--test`).
+  `--test 10` → **10/10 en los 4 textos trampa** (40 llamadas). Validaciones nuevas: `isinstance(x, list)`,
+  elementos `str` no vacíos, **sin duplicados** (`len(set(l)) == len(l)`) y **fechas normalizadas** con
+  `re.fullmatch(r"^\d{4}-\d{2}(-\d{2})?$")`. Resultados: refrán → tres listas vacías; *"el martes pasado
+  me llamó Lucía"* → `["Lucía"]` y `fechas []` (relativa descartada, como manda la regla); *"Juan llamó;
+  después Juan escribió"* → `["Juan"]` sin duplicar; *"Ayer estuve en el mercado central de Bogotá"* →
+  `["Bogotá"]`. **Hueco detectado:** el validador **no** comprueba *fidelidad* al texto — si el original
+  dice `Bogota` y el modelo devuelve `Bogotá`, el JSON es válido y la corrección silenciosa pasa. Eso se
+  verifica aparte y **solo en campos literales**: `all(v in texto for v in lista)` (no vale para `fechas`,
+  que se normalizan a propósito). Moraleja: **diseña el contrato para que sea verificable**.
 - [ ] **Corrector con restricciones:** corrige gramática **sin cambiar** el significado; devuelve `{"texto": "...", "cambios": [...]}`.
 - [ ] **Generador YAML:** convierte un texto en YAML válido y bien indentado.
 - [x] **Compara temperaturas:** ejecuta el clasificador con `temperature` 0.1 vs 0.9 y explica las diferencias.
